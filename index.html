@@ -344,6 +344,9 @@
                     <button class="play-button" id="playButton" onclick="playAudio()">
                         🔊 Auto-play in <span id="countdown">1</span>s
                     </button>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                        * If audio doesn't auto-play, please click the button
+                    </p>
                 </div>
                 <div class="sentence-display" id="sentenceDisplay">
                     Loading question...
@@ -379,6 +382,9 @@
                     <button class="play-button" id="playButton2" onclick="playAudio2()">
                         🔊 Auto-play in <span id="countdown2">1</span>s
                     </button>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                        * If audio doesn't auto-play, please click the button
+                    </p>
                 </div>
                 <div class="sentence-display" id="sentenceDisplay2">
                     Loading question...
@@ -625,7 +631,7 @@
             }, 100);
         }
 
-        // 播放真实音频文件
+        // 播放真实音频文件 - 修复自动播放问题
         function playRealAudio(buttonId) {
             const button = document.getElementById(buttonId);
             const question = audioQuestions[currentQuestionIndex];
@@ -642,19 +648,46 @@
             // 创建新音频对象
             currentAudio = new Audio(question.audio);
             
+            // 设置音频属性
+            currentAudio.preload = 'auto';
+            currentAudio.volume = 0.8;
+            
             // 音频加载完成后播放
             currentAudio.addEventListener('loadeddata', () => {
-                currentAudio.play().catch(error => {
-                    console.error('Audio play failed:', error);
-                    button.textContent = '🔊 Audio Error - Continue';
-                    button.disabled = false;
-                });
+                // 尝试播放音频
+                const playPromise = currentAudio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        // 音频播放成功
+                        console.log('Audio playing successfully');
+                    }).catch(error => {
+                        // 自动播放被阻止，显示手动播放按钮
+                        console.log('Autoplay blocked, user interaction required:', error);
+                        button.textContent = '🔊 Click to Play Audio';
+                        button.disabled = false;
+                        
+                        // 添加点击事件来手动播放
+                        button.onclick = function() {
+                            currentAudio.play();
+                            button.textContent = '🔊 Playing Audio...';
+                            button.disabled = true;
+                        };
+                    });
+                }
             });
             
             // 音频播放完成后
             currentAudio.addEventListener('ended', () => {
                 button.textContent = '🔊 Play Again';
                 button.disabled = false;
+                
+                // 恢复原始点击事件
+                if (buttonId === 'playButton') {
+                    button.onclick = playAudio;
+                } else {
+                    button.onclick = playAudio2;
+                }
                 
                 // 重新聚焦到输入框
                 const activeStage = document.querySelector('.stage.active');
@@ -672,8 +705,13 @@
             // 音频加载错误处理
             currentAudio.addEventListener('error', (e) => {
                 console.error('Audio loading error:', e);
-                button.textContent = '🔊 Audio Error - Continue';
+                button.textContent = '🔊 Audio Error - Click to Retry';
                 button.disabled = false;
+                
+                // 添加重试功能
+                button.onclick = function() {
+                    playRealAudio(buttonId);
+                };
             });
         }
 
@@ -1019,10 +1057,10 @@
             }
         });
 
-        // 初始化实验 - 确保第一个问题有音频
+        // 初始化实验 - 启用音频上下文
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🎧 Audio Listening Experiment v8.0 - 只记录Review Phase点击');
-            console.log('✅ 厳格な答え判定：正確一致のみ正解');
+            console.log('✅ 厳格な答え判定：正确一致のみ正解');
             console.log('✅ 自動再生機能：1秒カウントダウン');
             console.log('✅ スペルチェック：赤い波線で間違い表示');
             console.log('🖱️ 只记录Review Phase的鼠标点击');
@@ -1036,7 +1074,23 @@
             
             // 初始化第一个问题，确保音频自动播放
             initializeQuestion();
+            
+            // 添加用户交互检测来启用音频
+            document.addEventListener('click', enableAudio, { once: true });
+            document.addEventListener('keydown', enableAudio, { once: true });
         });
+
+        // 启用音频上下文（用户首次交互后）
+        function enableAudio() {
+            // 创建一个静音音频来初始化音频上下文
+            const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAAQQBEAEEAhAIBAQEAAQAAAQABAAABAAgABgAGAAYABgAGAA==');
+            silentAudio.volume = 0;
+            silentAudio.play().then(() => {
+                console.log('Audio context enabled');
+            }).catch(() => {
+                console.log('Audio context failed to enable');
+            });
+        }
 
         // 简化页面离开事件
         window.addEventListener('beforeunload', function() {
