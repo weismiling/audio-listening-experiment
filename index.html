@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Listening Experiment v8.0</title>
+    <title>Audio Listening Experiment v8.0 - Firebase Enhanced</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -51,6 +56,26 @@
             font-size: 0.8em;
             font-weight: 600;
             margin-left: 10px;
+        }
+
+        .firebase-status {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin-top: 10px;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .firebase-status.connected {
+            background: #28a745;
+        }
+
+        .firebase-status.connecting {
+            background: #ffc107;
+            color: #333;
         }
 
         .stage {
@@ -313,6 +338,14 @@
             margin-right: 10px;
         }
 
+        .mouse-tracking-info {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -322,6 +355,7 @@
     <div class="container">
         <div class="header">
             <h1>🎧 Audio Listening Experiment <span class="version-badge">v8.0</span></h1>
+            <div class="firebase-status connecting" id="firebaseStatus">🔄 请先配置Firebase...</div>
             <p class="info-text">完整数据追踪系统 • 自动音频播放 • 100问测试</p>
         </div>
 
@@ -334,7 +368,7 @@
             </div>
         </div>
 
-        <!-- Stage 1: First Test -->
+        <!-- Stage 1: First Test (Questions 1-50) -->
         <div class="stage active" id="stage1">
             <div class="question-card">
                 <div class="question-number" id="questionNumber">
@@ -360,23 +394,27 @@
             </div>
         </div>
 
-        <!-- Stage 2: Answer Review -->
+        <!-- Stage 2: Answer Review (Mouse tracking) -->
         <div class="stage" id="stage2">
             <div class="feedback-section">
                 <h2>📝 Answer Review - Spell Check</h2>
+                <div class="mouse-tracking-info">
+                    <strong>注意：</strong> 在此页面上，我们将记录您的鼠标点击和页面交互行为，
+                    用于研究用户界面的使用模式。这些数据仅用于学术研究目的。
+                </div>
                 <p><strong>厳格判定:</strong> 完全一致のみ正解 | <strong>スペルチェック:</strong> 赤い波線をクリックして正解を確認</p>
                 <div id="answersReview"></div>
                 <div class="button-group">
-                    <button class="next-button" onclick="goToStage3()">Continue →</button>
+                    <button class="next-button" onclick="goToStage3()">Continue to Phase 2 →</button>
                 </div>
             </div>
         </div>
 
-        <!-- Stage 3: Second Test -->
+        <!-- Stage 3: Second Test (Questions 51-100) -->
         <div class="stage" id="stage3">
             <div class="question-card">
                 <div class="question-number" id="questionNumber2">
-                    Question 1 / 50
+                    Question 51 / 100
                 </div>
                 <div class="audio-controls">
                     <button class="play-button" id="playButton2" onclick="playAudio2()">
@@ -486,18 +524,84 @@
     </div>
 
     <script>
-        // 实验数据 - 只记录Review Phase的点击
+        // ============ Firebase配置 - 请替换为您的实际配置 ============
+        const firebaseConfig = {
+            // 🔥 请在这里填入您从Firebase Console获取的配置信息！
+           apiKey: "AIzaSyDqo6mGblUWNrzEkigIyt9YaSXJS2zpxsg",
+           authDomain: "audio-listening-experime-257b2.firebaseapp.com",
+           projectId: "audio-listening-experime-257b2",
+           storageBucket: "audio-listening-experime-257b2.firebasestorage.app",
+           messagingSenderId: "489014203991",
+           appId: "1:489014203991:web:2fe3ceb5939da84c75f512"
+
+        };
+
+        // 检查Firebase配置是否已更新
+        function checkFirebaseConfig() {
+            const isConfigured = !firebaseConfig.apiKey.includes('请替换');
+            const statusElement = document.getElementById('firebaseStatus');
+            
+            if (!isConfigured) {
+                statusElement.textContent = '❌ 请先配置Firebase信息';
+                statusElement.className = 'firebase-status';
+                console.error('🔥 Firebase配置未完成！请按照指南配置Firebase信息。');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Firebase初始化
+        let db = null;
+        let firebaseInitialized = false;
+
+        async function initializeFirebase() {
+            if (!checkFirebaseConfig()) {
+                return false;
+            }
+
+            try {
+                document.getElementById('firebaseStatus').textContent = '🔄 连接Firebase中...';
+                document.getElementById('firebaseStatus').className = 'firebase-status connecting';
+                
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                
+                // 测试连接
+                await db.collection('test').get();
+                
+                document.getElementById('firebaseStatus').textContent = '✅ Firebase已连接';
+                document.getElementById('firebaseStatus').className = 'firebase-status connected';
+                
+                firebaseInitialized = true;
+                console.log('🔥 Firebase初始化成功！');
+                return true;
+            } catch (error) {
+                document.getElementById('firebaseStatus').textContent = '❌ Firebase连接失败';
+                document.getElementById('firebaseStatus').className = 'firebase-status';
+                console.error('❌ Firebase初始化失败:', error);
+                return false;
+            }
+        }
+
+        // ============ 全局变量 ============
+        const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        let currentPhase = 'phase1';
+        let isReviewPhase = false;
+        let mouseClickData = [];
+        
+        // 原有实验数据结构
         let experimentData = {
             participantId: 'P' + Date.now(),
             prolificPID: null,
             round1Answers: [],
             round2Answers: [],
-            reviewPhaseClicks: [],  // 只记录Review阶段的点击
+            reviewPhaseClicks: [],
             spellCheckClicks: 0,
             timestamps: { start: Date.now() }
         };
 
-        // 50个问题 - 现在包含真实音频文件路径
+        // 50个问题数据
         const audioQuestions = [
             { sentence: "The government has ____ that the new tax policy has been a disaster.", answer: "conceded", audio: "audio/concede.mp3" },
             { sentence: "He's got a lot of ____ degrees and awards from educational establishments worldwide.", answer: "honorary", audio: "audio/honorary.mp3" },
@@ -553,15 +657,202 @@
 
         let currentQuestionIndex = 0;
         let countdownTimer = null;
-        let currentAudio = null;  // 添加音频对象追踪
+        let currentAudio = null;
 
-        // 初始化Prolific数据
+        // ============ Firebase数据记录函数 ============
+        async function initializeExperiment() {
+            if (!firebaseInitialized) {
+                console.log('⚠️ Firebase未初始化，跳过数据记录');
+                return;
+            }
+
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const prolificId = urlParams.get('PROLIFIC_PID') || 'test_user_' + Date.now();
+                
+                experimentData.prolificPID = prolificId;
+                
+                await db.collection('audio_experiment_sessions').doc(sessionId).set({
+                    participantId: experimentData.participantId,
+                    prolificId: prolificId,
+                    startTime: firebase.firestore.Timestamp.now(),
+                    userAgent: navigator.userAgent,
+                    screenResolution: `${screen.width}x${screen.height}`,
+                    windowSize: `${window.innerWidth}x${window.innerHeight}`,
+                    phase1_completed: false,
+                    phase2_completed: false,
+                    experiment_completed: false,
+                    created_at: firebase.firestore.Timestamp.now()
+                });
+                
+                console.log('🔥 实验会话已创建, Session ID:', sessionId);
+            } catch (error) {
+                console.error('❌ 创建实验会话失败:', error);
+            }
+        }
+
+        async function recordPhase1Answer(questionNumber, audioFile, userAnswer, correctAnswer, responseTime) {
+            if (!firebaseInitialized) return;
+            
+            try {
+                const answerData = {
+                    sessionId: sessionId,
+                    phase: 'phase1',
+                    questionNumber: questionNumber,
+                    audioFile: audioFile,
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAnswer,
+                    isCorrect: userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim(),
+                    responseTime: responseTime,
+                    timestamp: firebase.firestore.Timestamp.now()
+                };
+                
+                await db.collection('phase1_answers').add(answerData);
+                console.log(`📝 阶段1 问题${questionNumber} 已记录`);
+                
+                if (questionNumber === 50) {
+                    await db.collection('audio_experiment_sessions').doc(sessionId).update({
+                        phase1_completed: true,
+                        phase1_completion_time: firebase.firestore.Timestamp.now()
+                    });
+                }
+            } catch (error) {
+                console.error('❌ 记录阶段1答案失败:', error);
+            }
+        }
+
+        async function recordPhase2Answer(questionNumber, audioFile, userAnswer, correctAnswer, responseTime) {
+            if (!firebaseInitialized) return;
+            
+            try {
+                const answerData = {
+                    sessionId: sessionId,
+                    phase: 'phase2',
+                    questionNumber: questionNumber + 50, // 51-100
+                    audioFile: audioFile,
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAnswer,
+                    isCorrect: userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim(),
+                    responseTime: responseTime,
+                    timestamp: firebase.firestore.Timestamp.now()
+                };
+                
+                await db.collection('phase2_answers').add(answerData);
+                console.log(`📝 阶段2 问题${questionNumber + 50} 已记录`);
+                
+                if (questionNumber === 49) { // 第二轮的第50题
+                    await db.collection('audio_experiment_sessions').doc(sessionId).update({
+                        phase2_completed: true,
+                        phase2_completion_time: firebase.firestore.Timestamp.now(),
+                        experiment_completed: true,
+                        total_completion_time: firebase.firestore.Timestamp.now()
+                    });
+                }
+            } catch (error) {
+                console.error('❌ 记录阶段2答案失败:', error);
+            }
+        }
+
+        // ============ 鼠标追踪函数 ============
+        function startMouseTracking() {
+            isReviewPhase = true;
+            mouseClickData = [];
+            console.log('🖱️ 开始追踪Review阶段鼠标点击');
+            
+            document.addEventListener('click', recordMouseClick);
+            document.addEventListener('scroll', recordScrollEvent);
+            document.addEventListener('keypress', recordKeyPress);
+        }
+
+        function recordMouseClick(event) {
+            if (!isReviewPhase) return;
+            
+            const clickData = {
+                type: 'click',
+                timestamp: Date.now(),
+                x: event.clientX,
+                y: event.clientY,
+                pageX: event.pageX,
+                pageY: event.pageY,
+                target: {
+                    tagName: event.target.tagName,
+                    id: event.target.id,
+                    className: event.target.className,
+                    textContent: event.target.textContent?.substring(0, 100)
+                },
+                button: event.button,
+                ctrlKey: event.ctrlKey,
+                shiftKey: event.shiftKey,
+                altKey: event.altKey
+            };
+            
+            mouseClickData.push(clickData);
+            experimentData.reviewPhaseClicks.push(clickData);
+        }
+
+        function recordScrollEvent(event) {
+            if (!isReviewPhase) return;
+            
+            const scrollData = {
+                type: 'scroll',
+                timestamp: Date.now(),
+                scrollX: window.scrollX,
+                scrollY: window.scrollY
+            };
+            
+            mouseClickData.push(scrollData);
+        }
+
+        function recordKeyPress(event) {
+            if (!isReviewPhase) return;
+            
+            const keyData = {
+                type: 'keypress',
+                timestamp: Date.now(),
+                key: event.key,
+                code: event.code
+            };
+            
+            mouseClickData.push(keyData);
+        }
+
+        async function saveMouseTrackingData() {
+            if (!firebaseInitialized || mouseClickData.length === 0) return;
+            
+            try {
+                const trackingData = {
+                    sessionId: sessionId,
+                    phase: 'confirmation_page',
+                    totalClicks: mouseClickData.filter(d => d.type === 'click').length,
+                    totalScrolls: mouseClickData.filter(d => d.type === 'scroll').length,
+                    totalKeyPresses: mouseClickData.filter(d => d.type === 'keypress').length,
+                    timeSpentOnPage: mouseClickData.length > 0 ? 
+                        mouseClickData[mouseClickData.length - 1].timestamp - mouseClickData[0].timestamp : 0,
+                    clickEvents: mouseClickData,
+                    timestamp: firebase.firestore.Timestamp.now()
+                };
+                
+                await db.collection('confirmation_page_interactions').add(trackingData);
+                console.log('🖱️ Review阶段交互数据已保存');
+                
+                // 清理事件监听器
+                document.removeEventListener('click', recordMouseClick);
+                document.removeEventListener('scroll', recordScrollEvent);
+                document.removeEventListener('keypress', recordKeyPress);
+                
+                isReviewPhase = false;
+                mouseClickData = [];
+            } catch (error) {
+                console.error('❌ 保存鼠标追踪数据失败:', error);
+            }
+        }
+
+        // ============ 原有实验逻辑 ============
         function initializeProlificData() {
             const urlParams = new URLSearchParams(window.location.search);
             experimentData.prolificPID = urlParams.get('PROLIFIC_PID') || 'TEST_USER';
         }
 
-        // 只在Review Phase追踪点击
         function trackReviewClick(type, data) {
             experimentData.reviewPhaseClicks.push({
                 type: type,
@@ -569,21 +860,16 @@
                 timestamp: Date.now(),
                 coordinates: { x: event.clientX, y: event.clientY }
             });
-            console.log('Review Phase click tracked:', type, data);
         }
 
-        // 发送数据到服务器
         function sendDataToServer(type, data) {
             console.log('📤 Sending data:', type, data);
-            // 这里添加实际的服务器请求
         }
 
-        // 严格答案检查
         function strictAnswerCheck(userAnswer, correctAnswer) {
             return userAnswer.trim() === correctAnswer.trim();
         }
 
-        // 计算准确率
         function calculateAccuracy(answers) {
             if (answers.length === 0) return 0;
             const correct = answers.filter(answer => 
@@ -592,7 +878,6 @@
             return Math.round((correct / answers.length) * 100);
         }
 
-        // 自动播放倒计时 - 修复第一个问题音频播放
         function startCountdown(buttonId, countdownId) {
             const button = document.getElementById(buttonId);
             const countdownElement = document.getElementById(countdownId);
@@ -610,14 +895,11 @@
                 
                 if (timeLeft <= 0) {
                     clearInterval(countdownTimer);
-                    
-                    // 播放真实音频
                     playRealAudio(buttonId);
                 }
             }, 1000);
         }
 
-        // 页面跳转后自动开始倒计时 - 修复自动播放问题
         function autoStartAudio() {
             setTimeout(() => {
                 const activeStage = document.querySelector('.stage.active');
@@ -631,12 +913,10 @@
             }, 100);
         }
 
-        // 播放真实音频文件 - 修复自动播放问题
         function playRealAudio(buttonId) {
             const button = document.getElementById(buttonId);
             const question = audioQuestions[currentQuestionIndex];
             
-            // 停止之前的音频
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
@@ -645,29 +925,21 @@
             button.textContent = '🔊 Playing Audio...';
             button.disabled = true;
             
-            // 创建新音频对象
             currentAudio = new Audio(question.audio);
-            
-            // 设置音频属性
             currentAudio.preload = 'auto';
             currentAudio.volume = 0.8;
             
-            // 音频加载完成后播放
             currentAudio.addEventListener('loadeddata', () => {
-                // 尝试播放音频
                 const playPromise = currentAudio.play();
                 
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
-                        // 音频播放成功
                         console.log('Audio playing successfully');
                     }).catch(error => {
-                        // 自动播放被阻止，显示手动播放按钮
                         console.log('Autoplay blocked, user interaction required:', error);
                         button.textContent = '🔊 Click to Play Audio';
                         button.disabled = false;
                         
-                        // 添加点击事件来手动播放
                         button.onclick = function() {
                             currentAudio.play();
                             button.textContent = '🔊 Playing Audio...';
@@ -677,19 +949,16 @@
                 }
             });
             
-            // 音频播放完成后
             currentAudio.addEventListener('ended', () => {
                 button.textContent = '🔊 Play Again';
                 button.disabled = false;
                 
-                // 恢复原始点击事件
                 if (buttonId === 'playButton') {
                     button.onclick = playAudio;
                 } else {
                     button.onclick = playAudio2;
                 }
                 
-                // 重新聚焦到输入框
                 const activeStage = document.querySelector('.stage.active');
                 if (activeStage) {
                     if (activeStage.id === 'stage1') {
@@ -702,20 +971,17 @@
                 }
             });
             
-            // 音频加载错误处理
             currentAudio.addEventListener('error', (e) => {
                 console.error('Audio loading error:', e);
                 button.textContent = '🔊 Audio Error - Click to Retry';
                 button.disabled = false;
                 
-                // 添加重试功能
                 button.onclick = function() {
                     playRealAudio(buttonId);
                 };
             });
         }
 
-        // 初始化问题 - 确保自动播放
         function initializeQuestion() {
             if (currentQuestionIndex < audioQuestions.length) {
                 const question = audioQuestions[currentQuestionIndex];
@@ -733,20 +999,17 @@
                 
                 document.getElementById('errorMessage').style.display = 'none';
                 
-                // 自动聚焦到输入框
                 setTimeout(() => {
                     const input = document.getElementById('answerInput');
                     if (input) input.focus();
                 }, 100);
                 
-                // 延迟启动音频倒计时，确保页面完全加载
                 setTimeout(() => {
                     autoStartAudio();
                 }, 200);
             }
         }
 
-        // 初始化第二轮问题 - 确保自动播放
         function initializeQuestion2() {
             if (currentQuestionIndex < audioQuestions.length) {
                 const question = audioQuestions[currentQuestionIndex];
@@ -755,29 +1018,26 @@
                 
                 document.getElementById('sentenceDisplay2').innerHTML = sentenceWithBlank;
                 document.getElementById('questionNumber2').textContent = 
-                    `Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
+                    `Question ${currentQuestionIndex + 51} / 100`;
                 
                 const progress = 50 + (currentQuestionIndex / audioQuestions.length) * 50;
                 document.getElementById('progressFill').style.width = progress + '%';
                 document.getElementById('progressText').textContent = 
-                    `Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
+                    `Question ${currentQuestionIndex + 51} / 100`;
                 
                 document.getElementById('errorMessage2').style.display = 'none';
                 
-                // 自动聚焦到输入框
                 setTimeout(() => {
                     const input = document.getElementById('answerInput2');
                     if (input) input.focus();
                 }, 100);
                 
-                // 延迟启动音频倒计时，确保页面完全加载
                 setTimeout(() => {
                     autoStartAudio();
                 }, 200);
             }
         }
 
-        // 播放音频 - 使用真实音频文件
         function playAudio() {
             if (countdownTimer) clearInterval(countdownTimer);
             playRealAudio('playButton');
@@ -788,7 +1048,6 @@
             playRealAudio('playButton2');
         }
 
-        // 下一题 - 简化，不追踪
         function nextQuestion() {
             const input = document.getElementById('answerInput');
             const answer = input ? input.value.trim() : '';
@@ -801,6 +1060,7 @@
             
             const correctAnswer = audioQuestions[currentQuestionIndex].answer;
             const isCorrect = strictAnswerCheck(answer, correctAnswer);
+            const responseTime = Date.now() - experimentData.timestamps.start;
             
             experimentData.round1Answers.push({
                 questionIndex: currentQuestionIndex,
@@ -809,6 +1069,15 @@
                 isCorrect: isCorrect,
                 timestamp: Date.now()
             });
+            
+            // Firebase记录
+            recordPhase1Answer(
+                currentQuestionIndex + 1, 
+                audioQuestions[currentQuestionIndex].audio,
+                answer,
+                correctAnswer,
+                responseTime
+            );
             
             currentQuestionIndex++;
             
@@ -831,6 +1100,7 @@
             
             const correctAnswer = audioQuestions[currentQuestionIndex].answer;
             const isCorrect = strictAnswerCheck(answer, correctAnswer);
+            const responseTime = Date.now() - experimentData.timestamps.start;
             
             experimentData.round2Answers.push({
                 questionIndex: currentQuestionIndex,
@@ -839,6 +1109,15 @@
                 isCorrect: isCorrect,
                 timestamp: Date.now()
             });
+            
+            // Firebase记录
+            recordPhase2Answer(
+                currentQuestionIndex,
+                audioQuestions[currentQuestionIndex].audio,
+                answer,
+                correctAnswer,
+                responseTime
+            );
             
             currentQuestionIndex++;
             
@@ -849,7 +1128,6 @@
             }
         }
 
-        // 跳转到第二阶段
         function goToStage2() {
             document.getElementById('stage1').classList.remove('active');
             document.getElementById('stage2').classList.add('active');
@@ -857,10 +1135,10 @@
             document.getElementById('progressFill').style.width = '50%';
             document.getElementById('progressText').textContent = 'Review Phase';
             
+            startMouseTracking();
             generateAnswerReview();
         }
 
-        // 生成答案回顾
         function generateAnswerReview() {
             const reviewContainer = document.getElementById('answersReview');
             let reviewHTML = '<div style="line-height: 2.5; font-size: 1.2em;">';
@@ -883,9 +1161,7 @@
             reviewContainer.innerHTML = reviewHTML;
         }
 
-        // 显示拼写纠正 - 只在Review Phase追踪点击
         function showCorrection(index, correctAnswer, userAnswer) {
-            // 只在Review Phase记录点击
             trackReviewClick('spell_check_click', { 
                 questionIndex: index, 
                 userAnswer: userAnswer, 
@@ -913,20 +1189,20 @@
             experimentData.spellCheckClicks++;
         }
 
-        // 跳转到第三阶段 - 确保自动播放
-        function goToStage3() {
+        async function goToStage3() {
+            await saveMouseTrackingData();
+            
             document.getElementById('stage2').classList.remove('active');
             document.getElementById('stage3').classList.add('active');
             
             currentQuestionIndex = 0;
+            currentPhase = 'phase2';
             
-            document.getElementById('progressText').textContent = 'Starting next phase...';
+            document.getElementById('progressText').textContent = 'Starting Phase 2...';
             
-            // 初始化第二轮问题，包含自动播放
             initializeQuestion2();
         }
 
-        // 跳转到第四阶段
         function goToStage4() {
             document.getElementById('stage3').classList.remove('active');
             document.getElementById('stage4').classList.add('active');
@@ -935,15 +1211,13 @@
             document.getElementById('progressText').textContent = 'Survey Phase';
         }
 
-        // 完成实验 - 简化
-        function completeExperiment() {
+        async function completeExperiment() {
             const spinner = document.getElementById('submitSpinner');
             const button = event.target;
             
             spinner.style.display = 'inline-block';
             button.disabled = true;
             
-            // 收集调查数据
             const surveyData = {};
             
             ['difficulty', 'audio_feature', 'strict_matching'].forEach(name => {
@@ -958,13 +1232,21 @@
             experimentData.timestamps.experimentComplete = Date.now();
             
             const completionCode = generateCompletionCode();
-            const finalData = {
-                ...experimentData,
-                completionCode: completionCode
-            };
             
-            // 发送最终实验数据（包含Review Phase点击记录）
-            sendDataToServer('experiment_complete', finalData);
+            // Firebase保存调查数据
+            if (firebaseInitialized) {
+                try {
+                    await db.collection('survey_responses').add({
+                        sessionId: sessionId,
+                        surveyData: surveyData,
+                        completionCode: completionCode,
+                        timestamp: firebase.firestore.Timestamp.now()
+                    });
+                    console.log('📋 调查数据已保存');
+                } catch (error) {
+                    console.error('❌ 保存调查数据失败:', error);
+                }
+            }
             
             setTimeout(() => {
                 spinner.style.display = 'none';
@@ -974,18 +1256,13 @@
                 document.getElementById('stage5').classList.add('active');
                 
                 displayFinalResults(completionCode);
-                
-                console.log('📊 Complete Experiment Data:', experimentData);
-                console.log('🖱️ Review Phase Clicks:', experimentData.reviewPhaseClicks);
             }, 2000);
         }
 
-        // 生成完成代码
         function generateCompletionCode() {
             return 'EXP' + Date.now().toString().slice(-6);
         }
 
-        // 显示最终结果
         function displayFinalResults(completionCode) {
             const resultsContainer = document.getElementById('finalResults');
             
@@ -999,11 +1276,11 @@
                 <div class="stats-display">
                     <div class="stat-card">
                         <div class="stat-number">${round1Accuracy}%</div>
-                        <div>First Test Accuracy</div>
+                        <div>Phase 1 Accuracy</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-number">${round2Accuracy}%</div>
-                        <div>Second Test Accuracy</div>
+                        <div>Phase 2 Accuracy</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-number">${overallAccuracy}%</div>
@@ -1016,6 +1293,10 @@
                     <div class="stat-card">
                         <div class="stat-number">${experimentData.spellCheckClicks}</div>
                         <div>Spell Checks</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${experimentData.reviewPhaseClicks.length}</div>
+                        <div>Review Clicks</div>
                     </div>
                 </div>
                 
@@ -1030,7 +1311,9 @@
                 </div>
                 
                 <p style="margin-top: 25px; font-size: 1.1em;">
-                    <strong>Participant ID:</strong> ${experimentData.participantId}
+                    <strong>Participant ID:</strong> ${experimentData.participantId}<br>
+                    <strong>Session ID:</strong> ${sessionId}<br>
+                    <strong>Firebase Status:</strong> ${firebaseInitialized ? '✅ Connected' : '❌ Not Connected'}
                 </p>
             `;
         }
@@ -1057,32 +1340,7 @@
             }
         });
 
-        // 初始化实验 - 启用音频上下文
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎧 Audio Listening Experiment v8.0 - 只记录Review Phase点击');
-            console.log('✅ 厳格な答え判定：正确一致のみ正解');
-            console.log('✅ 自動再生機能：1秒カウントダウン');
-            console.log('✅ スペルチェック：赤い波線で間違い表示');
-            console.log('🖱️ 只记录Review Phase的鼠标点击');
-            
-            initializeProlificData();
-            
-            sendDataToServer('experiment_start', {
-                participantId: experimentData.participantId,
-                prolificPID: experimentData.prolificPID
-            });
-            
-            // 初始化第一个问题，确保音频自动播放
-            initializeQuestion();
-            
-            // 添加用户交互检测来启用音频
-            document.addEventListener('click', enableAudio, { once: true });
-            document.addEventListener('keydown', enableAudio, { once: true });
-        });
-
-        // 启用音频上下文（用户首次交互后）
         function enableAudio() {
-            // 创建一个静音音频来初始化音频上下文
             const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAAQQBEAEEAhAIBAQEAAQAAAQABAAABAAgABgAGAAYABgAGAA==');
             silentAudio.volume = 0;
             silentAudio.play().then(() => {
@@ -1092,17 +1350,35 @@
             });
         }
 
-        // 简化页面离开事件
+        // ============ 初始化 ============
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🎧 Audio Listening Experiment v8.0 - Firebase Enhanced');
+            
+            // 初始化Firebase
+            const firebaseReady = await initializeFirebase();
+            
+            if (firebaseReady) {
+                console.log('✅ Firebase已就绪，开始记录数据');
+                await initializeExperiment();
+            } else {
+                console.log('⚠️ Firebase未就绪，实验将在无数据记录模式下运行');
+            }
+            
+            initializeProlificData();
+            initializeQuestion();
+            
+            document.addEventListener('click', enableAudio, { once: true });
+            document.addEventListener('keydown', enableAudio, { once: true });
+        });
+
+        // 页面离开时清理
         window.addEventListener('beforeunload', function() {
             if (countdownTimer) clearInterval(countdownTimer);
-            // 停止音频播放
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
             }
         });
-
-        // 移除全局点击追踪，只保留键盘导航
     </script>
 </body>
 </html>
