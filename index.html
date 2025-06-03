@@ -527,13 +527,12 @@
         // ============ Firebase配置 - 请替换为您的实际配置 ============
         const firebaseConfig = {
             // 🔥 请在这里填入您从Firebase Console获取的配置信息！
-           apiKey: "AIzaSyDqo6mGblUWNrzEkigIyt9YaSXJS2zpxsg",
-           authDomain: "audio-listening-experime-257b2.firebaseapp.com",
-           projectId: "audio-listening-experime-257b2",
-           storageBucket: "audio-listening-experime-257b2.firebasestorage.app",
-           messagingSenderId: "489014203991",
-           appId: "1:489014203991:web:2fe3ceb5939da84c75f512"
-
+            apiKey: "请替换为您的API-KEY",
+            authDomain: "请替换为您的AUTH-DOMAIN",
+            projectId: "请替换为您的PROJECT-ID",
+            storageBucket: "请替换为您的STORAGE-BUCKET", 
+            messagingSenderId: "请替换为您的MESSAGING-SENDER-ID",
+            appId: "请替换为您的APP-ID"
         };
 
         // 检查Firebase配置是否已更新
@@ -900,6 +899,7 @@
             }, 1000);
         }
 
+        // 页面跳转后自动开始倒计时和音频播放
         function autoStartAudio() {
             setTimeout(() => {
                 const activeStage = document.querySelector('.stage.active');
@@ -910,7 +910,48 @@
                 } else if (activeStage.id === 'stage3') {
                     startCountdown('playButton2', 'countdown2');
                 }
-            }, 100);
+            }, 500); // 增加延迟确保页面完全加载
+        }
+
+        // 强制自动播放 - 新增功能
+        function forceAutoPlay() {
+            const activeStage = document.querySelector('.stage.active');
+            if (!activeStage) return;
+            
+            let buttonId, countdownId;
+            if (activeStage.id === 'stage1') {
+                buttonId = 'playButton';
+                countdownId = 'countdown';
+            } else if (activeStage.id === 'stage3') {
+                buttonId = 'playButton2';
+                countdownId = 'countdown2';
+            } else {
+                return;
+            }
+            
+            const button = document.getElementById(buttonId);
+            const countdownElement = document.getElementById(countdownId);
+            
+            if (!button || !countdownElement) return;
+            
+            // 清除现有计时器
+            if (countdownTimer) clearInterval(countdownTimer);
+            
+            // 立即开始倒计时
+            let timeLeft = 1;
+            countdownElement.textContent = timeLeft;
+            button.textContent = `🔊 Auto-play in ${timeLeft}s`;
+            
+            countdownTimer = setInterval(() => {
+                timeLeft--;
+                countdownElement.textContent = timeLeft;
+                button.textContent = `🔊 Auto-play in ${timeLeft}s`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdownTimer);
+                    playRealAudio(buttonId);
+                }
+            }, 1000);
         }
 
         function playRealAudio(buttonId) {
@@ -999,14 +1040,16 @@
                 
                 document.getElementById('errorMessage').style.display = 'none';
                 
+                // 自动聚焦到输入框
                 setTimeout(() => {
                     const input = document.getElementById('answerInput');
                     if (input) input.focus();
                 }, 100);
                 
+                // 强制自动播放音频 - 增强版
                 setTimeout(() => {
-                    autoStartAudio();
-                }, 200);
+                    forceAutoPlay();
+                }, 800);
             }
         }
 
@@ -1027,14 +1070,16 @@
                 
                 document.getElementById('errorMessage2').style.display = 'none';
                 
+                // 自动聚焦到输入框
                 setTimeout(() => {
                     const input = document.getElementById('answerInput2');
                     if (input) input.focus();
                 }, 100);
                 
+                // 强制自动播放音频 - 增强版
                 setTimeout(() => {
-                    autoStartAudio();
-                }, 200);
+                    forceAutoPlay();
+                }, 800);
             }
         }
 
@@ -1200,7 +1245,10 @@
             
             document.getElementById('progressText').textContent = 'Starting Phase 2...';
             
-            initializeQuestion2();
+            // 确保在页面切换后立即开始音频播放
+            setTimeout(() => {
+                initializeQuestion2();
+            }, 100);
         }
 
         function goToStage4() {
@@ -1365,10 +1413,15 @@
             }
             
             initializeProlificData();
-            initializeQuestion();
             
+            // 启用音频上下文（用户交互后）
             document.addEventListener('click', enableAudio, { once: true });
             document.addEventListener('keydown', enableAudio, { once: true });
+            
+            // 初始化第一个问题并自动播放
+            setTimeout(() => {
+                initializeQuestion();
+            }, 500);
         });
 
         // 页面离开时清理
