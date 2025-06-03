@@ -146,8 +146,8 @@
             font-size: 1.3em;
             padding: 12px 16px;
             margin: 0 10px;
-            min-width: 120px;
-            max-width: 150px;
+            min-width: 200px;
+            max-width: 250px;
             text-align: center;
             outline: none;
             border-radius: 8px 8px 0 0;
@@ -586,7 +586,7 @@
             return Math.round((correct / answers.length) * 100);
         }
 
-        // 自动播放倒计时 - 更新为播放真实音频
+        // 自动播放倒计时 - 修复第一个问题音频播放
         function startCountdown(buttonId, countdownId) {
             const button = document.getElementById(buttonId);
             const countdownElement = document.getElementById(countdownId);
@@ -609,6 +609,20 @@
                     playRealAudio(buttonId);
                 }
             }, 1000);
+        }
+
+        // 页面跳转后自动开始倒计时 - 修复自动播放问题
+        function autoStartAudio() {
+            setTimeout(() => {
+                const activeStage = document.querySelector('.stage.active');
+                if (!activeStage) return;
+                
+                if (activeStage.id === 'stage1') {
+                    startCountdown('playButton', 'countdown');
+                } else if (activeStage.id === 'stage3') {
+                    startCountdown('playButton2', 'countdown2');
+                }
+            }, 100);
         }
 
         // 播放真实音频文件
@@ -663,7 +677,7 @@
             });
         }
 
-        // 初始化问题 - 自动聚焦
+        // 初始化问题 - 确保自动播放
         function initializeQuestion() {
             if (currentQuestionIndex < audioQuestions.length) {
                 const question = audioQuestions[currentQuestionIndex];
@@ -687,14 +701,14 @@
                     if (input) input.focus();
                 }, 100);
                 
-                // 自动开始倒计时
+                // 延迟启动音频倒计时，确保页面完全加载
                 setTimeout(() => {
-                    startCountdown('playButton', 'countdown');
-                }, 100);
+                    autoStartAudio();
+                }, 200);
             }
         }
 
-        // 初始化第二轮问题 - 自动聚焦
+        // 初始化第二轮问题 - 确保自动播放
         function initializeQuestion2() {
             if (currentQuestionIndex < audioQuestions.length) {
                 const question = audioQuestions[currentQuestionIndex];
@@ -718,10 +732,10 @@
                     if (input) input.focus();
                 }, 100);
                 
-                // 自动开始倒计时
+                // 延迟启动音频倒计时，确保页面完全加载
                 setTimeout(() => {
-                    startCountdown('playButton2', 'countdown2');
-                }, 100);
+                    autoStartAudio();
+                }, 200);
             }
         }
 
@@ -861,7 +875,7 @@
             experimentData.spellCheckClicks++;
         }
 
-        // 跳转到第三阶段 - 简化
+        // 跳转到第三阶段 - 确保自动播放
         function goToStage3() {
             document.getElementById('stage2').classList.remove('active');
             document.getElementById('stage3').classList.add('active');
@@ -870,6 +884,7 @@
             
             document.getElementById('progressText').textContent = 'Starting next phase...';
             
+            // 初始化第二轮问题，包含自动播放
             initializeQuestion2();
         }
 
@@ -1004,7 +1019,7 @@
             }
         });
 
-        // 初始化实验 - 简化
+        // 初始化实验 - 确保第一个问题有音频
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🎧 Audio Listening Experiment v8.0 - 只记录Review Phase点击');
             console.log('✅ 厳格な答え判定：正確一致のみ正解');
@@ -1019,6 +1034,7 @@
                 prolificPID: experimentData.prolificPID
             });
             
+            // 初始化第一个问题，确保音频自动播放
             initializeQuestion();
         });
 
