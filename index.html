@@ -497,7 +497,7 @@
             timestamps: { start: Date.now() }
         };
 
-        // 50个问题 - 现在包含真实音频文件路径
+        // 50个问题 - 确保第一个问题有正确的音频路径
         const audioQuestions = [
             { sentence: "The government has ____ that the new tax policy has been a disaster.", answer: "conceded", audio: "audio/conceded.mp3" },
             { sentence: "He's got a lot of ____ degrees and awards from educational establishments worldwide.", answer: "honorary", audio: "audio/honorary.mp3" },
@@ -631,10 +631,13 @@
             }, 100);
         }
 
-        // 播放真实音频文件 - 修复自动播放问题
+        // 播放真实音频文件 - 添加调试信息
         function playRealAudio(buttonId) {
             const button = document.getElementById(buttonId);
             const question = audioQuestions[currentQuestionIndex];
+            
+            console.log(`🎵 Attempting to play audio for question ${currentQuestionIndex + 1}: ${question.audio}`);
+            console.log(`🎯 Answer: ${question.answer}`);
             
             // 停止之前的音频
             if (currentAudio) {
@@ -642,7 +645,7 @@
                 currentAudio.currentTime = 0;
             }
             
-            button.textContent = '🔊 Playing Audio...';
+            button.textContent = '🔊 Loading Audio...';
             button.disabled = true;
             
             // 创建新音频对象
@@ -652,23 +655,32 @@
             currentAudio.preload = 'auto';
             currentAudio.volume = 0.8;
             
+            // 音频开始加载
+            currentAudio.addEventListener('loadstart', () => {
+                console.log('🔄 Audio loading started:', question.audio);
+            });
+            
             // 音频加载完成后播放
             currentAudio.addEventListener('loadeddata', () => {
+                console.log('✅ Audio loaded successfully:', question.audio);
+                button.textContent = '🔊 Playing Audio...';
+                
                 // 尝试播放音频
                 const playPromise = currentAudio.play();
                 
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
                         // 音频播放成功
-                        console.log('Audio playing successfully');
+                        console.log('🎵 Audio playing successfully');
                     }).catch(error => {
                         // 自动播放被阻止，显示手动播放按钮
-                        console.log('Autoplay blocked, user interaction required:', error);
+                        console.log('⚠️ Autoplay blocked, user interaction required:', error);
                         button.textContent = '🔊 Click to Play Audio';
                         button.disabled = false;
                         
                         // 添加点击事件来手动播放
                         button.onclick = function() {
+                            console.log('👆 User clicked to play audio manually');
                             currentAudio.play();
                             button.textContent = '🔊 Playing Audio...';
                             button.disabled = true;
@@ -679,6 +691,7 @@
             
             // 音频播放完成后
             currentAudio.addEventListener('ended', () => {
+                console.log('✅ Audio playback completed');
                 button.textContent = '🔊 Play Again';
                 button.disabled = false;
                 
@@ -704,12 +717,16 @@
             
             // 音频加载错误处理
             currentAudio.addEventListener('error', (e) => {
-                console.error('Audio loading error:', e);
+                console.error('❌ Audio loading error:', e);
+                console.error('🔗 Audio file path:', question.audio);
+                console.error('📁 Check if file exists in audio folder');
+                
                 button.textContent = '🔊 Audio Error - Click to Retry';
                 button.disabled = false;
                 
                 // 添加重试功能
                 button.onclick = function() {
+                    console.log('🔄 Retrying audio playback');
                     playRealAudio(buttonId);
                 };
             });
