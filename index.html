@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Listening Experiment v8.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            max-width: 900px;
+            width: 90%;
+            margin: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.8em;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .stage {
+            display: none;
+        }
+
+        .stage.active {
+            display: block;
+        }
+
+        .progress-container {
+            margin-bottom: 35px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background-color: #e8ecf4;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #667eea;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .question-card {
+            background: #f8f9ff;
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .question-number {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+        }
+
+        .audio-controls {
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        .play-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 240px;
+        }
+
+        .play-button:hover {
+            background: #5a6fd8;
+        }
+
+        .play-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .sentence-display {
+            font-size: 1.4em;
+            margin: 30px 0;
+            text-align: center;
+            line-height: 2.2;
+            padding: 25px;
+            background: white;
+            border-radius: 16px;
+        }
+
+        .input-field {
+            border: none;
+            border-bottom: 3px solid #667eea;
+            background: white;
+            font-size: 1.3em;
+            padding: 12px 16px;
+            margin: 0 10px;
+            min-width: 120px;
+            max-width: 150px;
+            text-align: center;
+            outline: none;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .spell-error-text {
+            border-bottom: 3px wavy #e74c3c;
+            background-color: rgba(231, 76, 60, 0.08);
+            padding: 3px 6px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .word-correction-popup {
+            position: fixed;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            z-index: 1000;
+        }
+
+        .correction-option {
+            padding: 8px 12px;
+            font-weight: 600;
+            color: #28a745;
+        }
+
+        .next-button, .submit-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 25px 15px;
+        }
+
+        .next-button:hover, .submit-button:hover {
+            background: #218838;
+        }
+
+        .feedback-section {
+            background: #e8f5e8;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 25px 0;
+            border-left: 6px solid #28a745;
+        }
+
+        .survey-section {
+            background: #fff3cd;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 25px 0;
+            border-left: 6px solid #ffc107;
+        }
+
+        .survey-question {
+            margin: 25px 0;
+        }
+
+        .survey-question label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .survey-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .completion-message {
+            text-align: center;
+            padding: 50px;
+            background: #28a745;
+            color: white;
+            border-radius: 24px;
+        }
+
+        .completion-message h2 {
+            font-size: 3em;
+            margin-bottom: 25px;
+        }
+
+        .button-group {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .info-text {
+            text-align: center;
+            color: #666;
+            margin: 25px 0;
+            line-height: 1.8;
+            font-size: 1.1em;
+        }
+
+        .stats-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎧 Audio Listening Experiment <span class="version-badge">v8.0</span></h1>
+            <p class="info-text">完整数据追踪系统 • 自动音频播放 • 100问测试</p>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-info">
+                <span id="progressText">Question 1 / 50</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <!-- Stage 1: First Test -->
+        <div class="stage active" id="stage1">
+            <div class="question-card">
+                <div class="question-number" id="questionNumber">
+                    Question 1 / 50
+                </div>
+                <div class="audio-controls">
+                    <button class="play-button" id="playButton" onclick="playAudio()">
+                        🔊 Auto-play in <span id="countdown">1</span>s
+                    </button>
+                </div>
+                <div class="sentence-display" id="sentenceDisplay">
+                    Loading question...
+                </div>
+                <div class="error-message" id="errorMessage">
+                    Please fill in the blank before proceeding.
+                </div>
+                <div class="button-group">
+                    <button class="next-button" onclick="nextQuestion()">Next Question →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stage 2: Answer Review -->
+        <div class="stage" id="stage2">
+            <div class="feedback-section">
+                <h2>📝 Answer Review - Spell Check</h2>
+                <p><strong>厳格判定:</strong> 完全一致のみ正解 | <strong>スペルチェック:</strong> 赤い波線をクリックして正解を確認</p>
+                <div id="answersReview"></div>
+                <div class="button-group">
+                    <button class="next-button" onclick="goToStage3()">Continue →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stage 3: Second Test -->
+        <div class="stage" id="stage3">
+            <div class="question-card">
+                <div class="question-number" id="questionNumber2">
+                    Question 1 / 50
+                </div>
+                <div class="audio-controls">
+                    <button class="play-button" id="playButton2" onclick="playAudio2()">
+                        🔊 Auto-play in <span id="countdown2">1</span>s
+                    </button>
+                </div>
+                <div class="sentence-display" id="sentenceDisplay2">
+                    Loading question...
+                </div>
+                <div class="error-message" id="errorMessage2">
+                    Please fill in the blank before proceeding.
+                </div>
+                <div class="button-group">
+                    <button class="next-button" onclick="nextQuestion2()">Next Question →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stage 4: Survey -->
+        <div class="stage" id="stage4">
+            <div class="survey-section">
+                <h2>📋 Post-Experiment Survey</h2>
+                <p class="info-text">Thank you for completing the experiment!</p>
+                
+                <div class="survey-question">
+                    <label>1. How difficult did you find this experiment?</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="difficulty" value="very_easy"> Very Easy
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="difficulty" value="easy"> Easy
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="difficulty" value="medium"> Medium
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="difficulty" value="hard"> Hard
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="difficulty" value="very_hard"> Very Hard
+                        </label>
+                    </div>
+                </div>
+
+                <div class="survey-question">
+                    <label>2. How was the auto-play audio feature?</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="audio_feature" value="excellent"> Excellent
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="audio_feature" value="good"> Good
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="audio_feature" value="fair"> Fair
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="audio_feature" value="poor"> Poor
+                        </label>
+                    </div>
+                </div>
+
+                <div class="survey-question">
+                    <label>3. Did the strict answer matching system work well?</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="strict_matching" value="very_helpful"> Very Helpful
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="strict_matching" value="helpful"> Helpful
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="strict_matching" value="neutral"> Neutral
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="strict_matching" value="not_helpful"> Not Helpful
+                        </label>
+                    </div>
+                </div>
+
+                <div class="survey-question">
+                    <label>4. Additional comments about the experiment:</label>
+                    <textarea class="survey-input" rows="4" id="additionalComments" placeholder="Please share your feedback..."></textarea>
+                </div>
+
+                <div class="button-group">
+                    <button class="submit-button" onclick="completeExperiment()">
+                        <span class="loading-spinner" id="submitSpinner"></span>
+                        Submit Final Results ✓
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stage 5: Completion -->
+        <div class="stage" id="stage5">
+            <div class="completion-message">
+                <h2>🎉 Experiment Complete!</h2>
+                <p>Thank you for participating in our experiment!</p>
+                <div id="finalResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 实验数据 - 只记录Review Phase的点击
+        let experimentData = {
+            participantId: 'P' + Date.now(),
+            prolificPID: null,
+            round1Answers: [],
+            round2Answers: [],
+            reviewPhaseClicks: [],  // 只记录Review阶段的点击
+            spellCheckClicks: 0,
+            timestamps: { start: Date.now() }
+        };
+
+        // 50个问题 - 现在包含真实音频文件路径
+        const audioQuestions = [
+            { sentence: "The government has ____ that the new tax policy has been a disaster.", answer: "conceded", audio: "audio/conceded.mp3" },
+            { sentence: "He's got a lot of ____ degrees and awards from educational establishments worldwide.", answer: "honorary", audio: "audio/honorary.mp3" },
+            { sentence: "As people ____ more wealth, they tend to spend a greater proportion of their incomes.", answer: "accumulate", audio: "audio/accumulate.mp3" },
+            { sentence: "Plant growth is most ____ in spring and early summer.", answer: "noticeable", audio: "audio/noticeable.mp3" },
+            { sentence: "The ____ is to perform its last ever concert tomorrow night at the Albert Hall.", answer: "orchestra", audio: "audio/orchestra.mp3" },
+            { sentence: "Public ____ about the disease is still a cause for concern.", answer: "ignorance", audio: "audio/ignorance.mp3" },
+            { sentence: "The president does not want to answer any ____ questions.", answer: "theoretical", audio: "audio/theoretical.mp3" },
+            { sentence: "Education should be ____ to the child's needs.", answer: "relevant", audio: "audio/relevant.mp3" },
+            { sentence: "His father is buried in the ____ on the hill.", answer: "cemetery", audio: "audio/cemetery.mp3" },
+            { sentence: "Although the play was written hundreds of years ago, it still has a ____ feel to it.", answer: "contemporary", audio: "audio/contemporary.mp3" },
+            { sentence: "He is blessed with both good looks and ____.", answer: "intelligence", audio: "audio/intelligence.mp3" },
+            { sentence: "He was brought up on a diet of political ____ from birth.", answer: "propaganda", audio: "audio/propaganda.mp3" },
+            { sentence: "This recipe should be ____ for five people.", answer: "sufficient", audio: "audio/sufficient.mp3" },
+            { sentence: "Young people don't always appreciate the ____ offered by their parents and teachers.", answer: "guidance", audio: "audio/guidance.mp3" },
+            { sentence: "Not making a will can have serious ____ for your children and other family members.", answer: "consequences", audio: "audio/consequences.mp3" },
+            { sentence: "The country is run on socialist ____.", answer: "principles", audio: "audio/principles.mp3" },
+            { sentence: "Any help you could give me would be greatly ____.", answer: "appreciated", audio: "audio/appreciated.mp3" },
+            { sentence: "He was arrested for taking part in ____ activities.", answer: "revolutionary", audio: "audio/revolutionary.mp3" },
+            { sentence: "I think it helps if you have an ____ personality.", answer: "extroverted", audio: "audio/extroverted.mp3" },
+            { sentence: "With the extra resources, the project now seems ____.", answer: "feasible", audio: "audio/feasible.mp3" },
+            { sentence: "That party was too ____ for me!", answer: "bizarre", audio: "audio/bizarre.mp3" },
+            { sentence: "The finance ____ controls the school's budget.", answer: "committee", audio: "audio/committee.mp3" },
+            { sentence: "I like the ____ of living close to work.", answer: "convenience", audio: "audio/convenience.mp3" },
+            { sentence: "It was when we started living together that we found we just weren't ____.", answer: "compatible", audio: "audio/compatible.mp3" },
+            { sentence: "He told the ____ story of his escape.", answer: "extraordinary", audio: "audio/extraordinary.mp3" },
+            { sentence: "He told one or two ____ stories about his years as a policeman.", answer: "humorous", audio: "audio/humorous.mp3" },
+            { sentence: "We really ought to leave ____.", answer: "immediately", audio: "audio/immediately.mp3" },
+            { sentence: "An ____ inquiry will determine whether the case should move forward.", answer: "independent", audio: "audio/independent.mp3" },
+            { sentence: "He decided to ____ a career in television.", answer: "pursue", audio: "audio/pursue.mp3" },
+            { sentence: "She has shown herself to be a highly ____ manager.", answer: "competent", audio: "audio/competent.mp3" },
+            { sentence: "The children have no ____ of being different.", answer: "consciousness", audio: "audio/consciousness.mp3" },
+            { sentence: "An old ____ for 2012 was still hanging on the wall of her office.", answer: "calendar", audio: "audio/calendar.mp3" },
+            { sentence: "The general ____ in the office is that he can't do his job.", answer: "consensus", audio: "audio/consensus.mp3" },
+            { sentence: "The sun ____ behind heavy clouds.", answer: "disappeared", audio: "audio/disappeared.mp3" },
+            { sentence: "I'm sorry to ____ you, but I'm afraid I can't come after all.", answer: "disappoint", audio: "audio/disappoint.mp3" },
+            { sentence: "Such a war would be ____ for the country.", answer: "disastrous", audio: "audio/disastrous.mp3" },
+            { sentence: "Some monkeys have a very complex social ____.", answer: "hierarchy", audio: "audio/hierarchy.mp3" },
+            { sentence: "We met on several ____ to discuss the issue.", answer: "occasions", audio: "audio/occasions.mp3" },
+            { sentence: "I had the ____ of interviewing Picasso in the 1960s.", answer: "privilege", audio: "audio/privilege.mp3" },
+            { sentence: "Store fruit juice in the ____.", answer: "refrigerator", audio: "audio/refrigerator.mp3" },
+            { sentence: "I didn't want to ____ her in front of her friends.", answer: "embarrass", audio: "audio/embarrass.mp3" },
+            { sentence: "The art department and the music department are in two ____ buildings.", answer: "separate", audio: "audio/separate.mp3" },
+            { sentence: "She ____ for her husband's rudeness.", answer: "apologized", audio: "audio/apologized.mp3" },
+            { sentence: "I'll be living here for the ____ future.", answer: "foreseeable", audio: "audio/foreseeable.mp3" },
+            { sentence: "She gave me one of those ____ smiles and I just had to agree.", answer: "irresistible", audio: "audio/irresistible.mp3" },
+            { sentence: "Imagine what the world will be like at the end of the next ____.", answer: "millennium", audio: "audio/millennium.mp3" },
+            { sentence: "There are two different ____ of this word.", answer: "pronunciations", audio: "audio/pronunciations.mp3" },
+            { sentence: "Visitors to the country have been asked to fill out a detailed ____.", answer: "questionnaire", audio: "audio/questionnaire.mp3" },
+            { sentence: "He ____ said he'd be here.", answer: "definitely", audio: "audio/definitely.mp3" },
+            { sentence: "Death was an everyday ____ during the Civil War.", answer: "occurrence", audio: "audio/occurrence.mp3" }
+        ];
+
+        let currentQuestionIndex = 0;
+        let countdownTimer = null;
+        let currentAudio = null;  // 添加音频对象追踪
+
+        // 初始化Prolific数据
+        function initializeProlificData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            experimentData.prolificPID = urlParams.get('PROLIFIC_PID') || 'TEST_USER';
+        }
+
+        // 只在Review Phase追踪点击
+        function trackReviewClick(type, data) {
+            experimentData.reviewPhaseClicks.push({
+                type: type,
+                data: data,
+                timestamp: Date.now(),
+                coordinates: { x: event.clientX, y: event.clientY }
+            });
+            console.log('Review Phase click tracked:', type, data);
+        }
+
+        // 发送数据到服务器
+        function sendDataToServer(type, data) {
+            console.log('📤 Sending data:', type, data);
+            // 这里添加实际的服务器请求
+        }
+
+        // 严格答案检查
+        function strictAnswerCheck(userAnswer, correctAnswer) {
+            return userAnswer.trim() === correctAnswer.trim();
+        }
+
+        // 计算准确率
+        function calculateAccuracy(answers) {
+            if (answers.length === 0) return 0;
+            const correct = answers.filter(answer => 
+                strictAnswerCheck(answer.userAnswer, answer.correctAnswer)
+            ).length;
+            return Math.round((correct / answers.length) * 100);
+        }
+
+        // 自动播放倒计时 - 更新为播放真实音频
+        function startCountdown(buttonId, countdownId) {
+            const button = document.getElementById(buttonId);
+            const countdownElement = document.getElementById(countdownId);
+            
+            if (!button || !countdownElement) return;
+            
+            let timeLeft = 1;
+            countdownElement.textContent = timeLeft;
+            
+            if (countdownTimer) clearInterval(countdownTimer);
+            
+            countdownTimer = setInterval(() => {
+                timeLeft--;
+                countdownElement.textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdownTimer);
+                    
+                    // 播放真实音频
+                    playRealAudio(buttonId);
+                }
+            }, 1000);
+        }
+
+        // 播放真实音频文件
+        function playRealAudio(buttonId) {
+            const button = document.getElementById(buttonId);
+            const question = audioQuestions[currentQuestionIndex];
+            
+            // 停止之前的音频
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            
+            button.textContent = '🔊 Playing Audio...';
+            button.disabled = true;
+            
+            // 创建新音频对象
+            currentAudio = new Audio(question.audio);
+            
+            // 音频加载完成后播放
+            currentAudio.addEventListener('loadeddata', () => {
+                currentAudio.play().catch(error => {
+                    console.error('Audio play failed:', error);
+                    button.textContent = '🔊 Audio Error - Continue';
+                    button.disabled = false;
+                });
+            });
+            
+            // 音频播放完成后
+            currentAudio.addEventListener('ended', () => {
+                button.textContent = '🔊 Play Again';
+                button.disabled = false;
+                
+                // 重新聚焦到输入框
+                const activeStage = document.querySelector('.stage.active');
+                if (activeStage) {
+                    if (activeStage.id === 'stage1') {
+                        const input = document.getElementById('answerInput');
+                        if (input) input.focus();
+                    } else if (activeStage.id === 'stage3') {
+                        const input = document.getElementById('answerInput2');
+                        if (input) input.focus();
+                    }
+                }
+            });
+            
+            // 音频加载错误处理
+            currentAudio.addEventListener('error', (e) => {
+                console.error('Audio loading error:', e);
+                button.textContent = '🔊 Audio Error - Continue';
+                button.disabled = false;
+            });
+        }
+
+        // 初始化问题 - 自动聚焦
+        function initializeQuestion() {
+            if (currentQuestionIndex < audioQuestions.length) {
+                const question = audioQuestions[currentQuestionIndex];
+                const sentenceWithBlank = question.sentence.replace('____', 
+                    '<input type="text" class="input-field" id="answerInput" placeholder="____" autocomplete="off">');
+                
+                document.getElementById('sentenceDisplay').innerHTML = sentenceWithBlank;
+                document.getElementById('questionNumber').textContent = 
+                    `Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
+                
+                const progress = (currentQuestionIndex / audioQuestions.length) * 50;
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('progressText').textContent = 
+                    `Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
+                
+                document.getElementById('errorMessage').style.display = 'none';
+                
+                // 自动聚焦到输入框
+                setTimeout(() => {
+                    const input = document.getElementById('answerInput');
+                    if (input) input.focus();
+                }, 100);
+                
+                // 自动开始倒计时
+                setTimeout(() => {
+                    startCountdown('playButton', 'countdown');
+                }, 100);
+            }
+        }
+
+        // 初始化第二轮问题 - 自动聚焦
+        function initializeQuestion2() {
+            if (currentQuestionIndex < audioQuestions.length) {
+                const question = audioQuestions[currentQuestionIndex];
+                const sentenceWithBlank = question.sentence.replace('____', 
+                    '<input type="text" class="input-field" id="answerInput2" placeholder="____" autocomplete="off">');
+                
+                document.getElementById('sentenceDisplay2').innerHTML = sentenceWithBlank;
+                document.getElementById('questionNumber2').textContent = 
+                    `Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
+                
+                const progress = 50 + (currentQuestionIndex / audioQuestions.length) * 50;
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('progressText').textContent = 
+                    `Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
+                
+                document.getElementById('errorMessage2').style.display = 'none';
+                
+                // 自动聚焦到输入框
+                setTimeout(() => {
+                    const input = document.getElementById('answerInput2');
+                    if (input) input.focus();
+                }, 100);
+                
+                // 自动开始倒计时
+                setTimeout(() => {
+                    startCountdown('playButton2', 'countdown2');
+                }, 100);
+            }
+        }
+
+        // 播放音频 - 使用真实音频文件
+        function playAudio() {
+            if (countdownTimer) clearInterval(countdownTimer);
+            playRealAudio('playButton');
+        }
+
+        function playAudio2() {
+            if (countdownTimer) clearInterval(countdownTimer);
+            playRealAudio('playButton2');
+        }
+
+        // 下一题 - 简化，不追踪
+        function nextQuestion() {
+            const input = document.getElementById('answerInput');
+            const answer = input ? input.value.trim() : '';
+            
+            if (!answer) {
+                document.getElementById('errorMessage').style.display = 'block';
+                if (input) input.focus();
+                return;
+            }
+            
+            const correctAnswer = audioQuestions[currentQuestionIndex].answer;
+            const isCorrect = strictAnswerCheck(answer, correctAnswer);
+            
+            experimentData.round1Answers.push({
+                questionIndex: currentQuestionIndex,
+                userAnswer: answer,
+                correctAnswer: correctAnswer,
+                isCorrect: isCorrect,
+                timestamp: Date.now()
+            });
+            
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex >= audioQuestions.length) {
+                goToStage2();
+            } else {
+                initializeQuestion();
+            }
+        }
+
+        function nextQuestion2() {
+            const input = document.getElementById('answerInput2');
+            const answer = input ? input.value.trim() : '';
+            
+            if (!answer) {
+                document.getElementById('errorMessage2').style.display = 'block';
+                if (input) input.focus();
+                return;
+            }
+            
+            const correctAnswer = audioQuestions[currentQuestionIndex].answer;
+            const isCorrect = strictAnswerCheck(answer, correctAnswer);
+            
+            experimentData.round2Answers.push({
+                questionIndex: currentQuestionIndex,
+                userAnswer: answer,
+                correctAnswer: correctAnswer,
+                isCorrect: isCorrect,
+                timestamp: Date.now()
+            });
+            
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex >= audioQuestions.length) {
+                goToStage4();
+            } else {
+                initializeQuestion2();
+            }
+        }
+
+        // 跳转到第二阶段
+        function goToStage2() {
+            document.getElementById('stage1').classList.remove('active');
+            document.getElementById('stage2').classList.add('active');
+            
+            document.getElementById('progressFill').style.width = '50%';
+            document.getElementById('progressText').textContent = 'Review Phase';
+            
+            generateAnswerReview();
+        }
+
+        // 生成答案回顾
+        function generateAnswerReview() {
+            const reviewContainer = document.getElementById('answersReview');
+            let reviewHTML = '<div style="line-height: 2.5; font-size: 1.2em;">';
+            
+            experimentData.round1Answers.forEach((item, index) => {
+                const questionText = audioQuestions[item.questionIndex].sentence;
+                
+                if (item.isCorrect) {
+                    const filledSentence = questionText.replace('____', 
+                        `<strong style="color: #333; background: rgba(0, 0, 0, 0.05); padding: 2px 6px; border-radius: 4px;">${item.userAnswer}</strong>`);
+                    reviewHTML += `<p>${index + 1}. ${filledSentence}</p>`;
+                } else {
+                    const filledSentence = questionText.replace('____', 
+                        `<span class="spell-error-text" onclick="showCorrection(${index}, '${item.correctAnswer}', '${item.userAnswer}')">${item.userAnswer}</span>`);
+                    reviewHTML += `<p>${index + 1}. ${filledSentence}</p>`;
+                }
+            });
+            
+            reviewHTML += '</div>';
+            reviewContainer.innerHTML = reviewHTML;
+        }
+
+        // 显示拼写纠正 - 只在Review Phase追踪点击
+        function showCorrection(index, correctAnswer, userAnswer) {
+            // 只在Review Phase记录点击
+            trackReviewClick('spell_check_click', { 
+                questionIndex: index, 
+                userAnswer: userAnswer, 
+                correctAnswer: correctAnswer 
+            });
+            
+            const existingPopups = document.querySelectorAll('.word-correction-popup');
+            existingPopups.forEach(popup => popup.remove());
+            
+            const popup = document.createElement('div');
+            popup.className = 'word-correction-popup';
+            popup.innerHTML = `<div class="correction-option">${correctAnswer}</div>`;
+            
+            const errorElement = event.target;
+            const rect = errorElement.getBoundingClientRect();
+            popup.style.left = Math.min(rect.left, window.innerWidth - 200) + 'px';
+            popup.style.top = (rect.bottom + 5) + 'px';
+            
+            document.body.appendChild(popup);
+            
+            setTimeout(() => {
+                popup.remove();
+            }, 3000);
+            
+            experimentData.spellCheckClicks++;
+        }
+
+        // 跳转到第三阶段 - 简化
+        function goToStage3() {
+            document.getElementById('stage2').classList.remove('active');
+            document.getElementById('stage3').classList.add('active');
+            
+            currentQuestionIndex = 0;
+            
+            document.getElementById('progressText').textContent = 'Starting next phase...';
+            
+            initializeQuestion2();
+        }
+
+        // 跳转到第四阶段
+        function goToStage4() {
+            document.getElementById('stage3').classList.remove('active');
+            document.getElementById('stage4').classList.add('active');
+            
+            document.getElementById('progressFill').style.width = '100%';
+            document.getElementById('progressText').textContent = 'Survey Phase';
+        }
+
+        // 完成实验 - 简化
+        function completeExperiment() {
+            const spinner = document.getElementById('submitSpinner');
+            const button = event.target;
+            
+            spinner.style.display = 'inline-block';
+            button.disabled = true;
+            
+            // 收集调查数据
+            const surveyData = {};
+            
+            ['difficulty', 'audio_feature', 'strict_matching'].forEach(name => {
+                const radio = document.querySelector(`input[name="${name}"]:checked`);
+                if (radio) {
+                    surveyData[name] = radio.value;
+                }
+            });
+            
+            surveyData.additionalComments = document.getElementById('additionalComments').value;
+            experimentData.surveyResponses = surveyData;
+            experimentData.timestamps.experimentComplete = Date.now();
+            
+            const completionCode = generateCompletionCode();
+            const finalData = {
+                ...experimentData,
+                completionCode: completionCode
+            };
+            
+            // 发送最终实验数据（包含Review Phase点击记录）
+            sendDataToServer('experiment_complete', finalData);
+            
+            setTimeout(() => {
+                spinner.style.display = 'none';
+                button.disabled = false;
+                
+                document.getElementById('stage4').classList.remove('active');
+                document.getElementById('stage5').classList.add('active');
+                
+                displayFinalResults(completionCode);
+                
+                console.log('📊 Complete Experiment Data:', experimentData);
+                console.log('🖱️ Review Phase Clicks:', experimentData.reviewPhaseClicks);
+            }, 2000);
+        }
+
+        // 生成完成代码
+        function generateCompletionCode() {
+            return 'EXP' + Date.now().toString().slice(-6);
+        }
+
+        // 显示最终结果
+        function displayFinalResults(completionCode) {
+            const resultsContainer = document.getElementById('finalResults');
+            
+            const round1Accuracy = calculateAccuracy(experimentData.round1Answers);
+            const round2Accuracy = calculateAccuracy(experimentData.round2Answers);
+            const overallAccuracy = Math.round(((experimentData.round1Answers.filter(a => a.isCorrect).length + 
+                                               experimentData.round2Answers.filter(a => a.isCorrect).length) / 
+                                               (experimentData.round1Answers.length + experimentData.round2Answers.length)) * 100);
+            
+            resultsContainer.innerHTML = `
+                <div class="stats-display">
+                    <div class="stat-card">
+                        <div class="stat-number">${round1Accuracy}%</div>
+                        <div>First Test Accuracy</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${round2Accuracy}%</div>
+                        <div>Second Test Accuracy</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${overallAccuracy}%</div>
+                        <div>Overall Accuracy</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">100</div>
+                        <div>Total Questions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${experimentData.spellCheckClicks}</div>
+                        <div>Spell Checks</div>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.2); padding: 20px; border-radius: 12px; margin-top: 25px;">
+                    <h3 style="margin-bottom: 15px; font-size: 1.4em;">🎯 Completion Code for Prolific:</h3>
+                    <div style="background: rgba(255,255,255,0.9); color: #333; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 1.5em; font-weight: bold; text-align: center; letter-spacing: 2px;">
+                        ${completionCode}
+                    </div>
+                    <p style="margin-top: 15px; font-size: 1.1em;">
+                        Please copy this code and paste it into Prolific to receive your payment.
+                    </p>
+                </div>
+                
+                <p style="margin-top: 25px; font-size: 1.1em;">
+                    <strong>Participant ID:</strong> ${experimentData.participantId}
+                </p>
+            `;
+        }
+
+        // 键盘导航
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const activeStage = document.querySelector('.stage.active');
+                if (activeStage) {
+                    const stageId = activeStage.id;
+                    
+                    if (stageId === 'stage1') {
+                        const input = document.getElementById('answerInput');
+                        if (input && document.activeElement === input) {
+                            nextQuestion();
+                        }
+                    } else if (stageId === 'stage3') {
+                        const input = document.getElementById('answerInput2');
+                        if (input && document.activeElement === input) {
+                            nextQuestion2();
+                        }
+                    }
+                }
+            }
+        });
+
+        // 初始化实验 - 简化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎧 Audio Listening Experiment v8.0 - 只记录Review Phase点击');
+            console.log('✅ 厳格な答え判定：正確一致のみ正解');
+            console.log('✅ 自動再生機能：1秒カウントダウン');
+            console.log('✅ スペルチェック：赤い波線で間違い表示');
+            console.log('🖱️ 只记录Review Phase的鼠标点击');
+            
+            initializeProlificData();
+            
+            sendDataToServer('experiment_start', {
+                participantId: experimentData.participantId,
+                prolificPID: experimentData.prolificPID
+            });
+            
+            initializeQuestion();
+        });
+
+        // 简化页面离开事件
+        window.addEventListener('beforeunload', function() {
+            if (countdownTimer) clearInterval(countdownTimer);
+            // 停止音频播放
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+        });
+
+        // 移除全局点击追踪，只保留键盘导航
+    </script>
+</body>
+</html>
