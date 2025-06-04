@@ -180,10 +180,21 @@
 
         .spell-error-text {
             border-bottom: 3px wavy #e74c3c;
-            background-color: rgba(231, 76, 60, 0.08);
-            padding: 3px 6px;
+            background-color: rgba(231, 76, 60, 0.15);
+            padding: 4px 8px;
             border-radius: 6px;
             cursor: pointer;
+            position: relative;
+            text-decoration: underline;
+            text-decoration-color: #e74c3c;
+            text-decoration-style: wavy;
+            text-decoration-thickness: 2px;
+            font-weight: 500;
+        }
+
+        .spell-error-text:hover {
+            background-color: rgba(231, 76, 60, 0.25);
+            text-decoration-thickness: 3px;
         }
 
         .word-correction-popup {
@@ -368,8 +379,58 @@
             </div>
         </div>
 
+        <!-- Welcome Stage: Experiment Introduction -->
+        <div class="stage active" id="welcomeStage">
+            <div class="question-card">
+                <h2 style="text-align: center; color: #667eea; margin-bottom: 30px;">🎧 Welcome to Audio Listening Experiment</h2>
+                
+                <div style="background: #e3f2fd; padding: 25px; border-radius: 15px; margin-bottom: 25px;">
+                    <h3 style="color: #1976d2; margin-bottom: 20px;">📋 Experiment Instructions:</h3>
+                    <ul style="line-height: 2; color: #333; font-size: 1.1em;">
+                        <li><strong>Duration:</strong> Approximately 20-30 minutes</li>
+                        <li><strong>Structure:</strong> 100 audio questions in 2 phases (50 each)</li>
+                        <li><strong>Task:</strong> Listen to audio and fill in the missing word</li>
+                        <li><strong>Audio:</strong> Each audio will auto-play after 1 second</li>
+                        <li><strong>Review:</strong> You can review your answers between phases</li>
+                        <li><strong>Requirements:</strong> Use headphones for best audio quality</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+                    <h4 style="color: #856404; margin-bottom: 15px;">⚠️ Important Notes:</h4>
+                    <ul style="color: #856404; line-height: 1.8;">
+                        <li>Please ensure you have a stable internet connection</li>
+                        <li>Use headphones or speakers for clear audio</li>
+                        <li>Complete the experiment in one session without refreshing</li>
+                        <li>Your responses will be automatically saved</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+                    <label style="display: block; font-weight: 600; font-size: 1.2em; color: #333; margin-bottom: 10px;">
+                        🆔 Please enter your Prolific ID:
+                    </label>
+                    <input type="text" id="prolificIdInput" placeholder="Enter your Prolific ID here..." 
+                           style="width: 100%; padding: 15px; font-size: 1.1em; border: 2px solid #667eea; border-radius: 8px; margin-bottom: 15px;">
+                    <p style="color: #666; font-size: 0.9em; margin: 0;">
+                        This ID is provided by Prolific and is required to receive payment.
+                    </p>
+                </div>
+                
+                <div class="button-group" style="text-align: center;">
+                    <button class="next-button" onclick="startExperiment()" id="startExperimentBtn" style="font-size: 1.3em; padding: 18px 40px;">
+                        🚀 Start Experiment
+                    </button>
+                </div>
+                
+                <div class="error-message" id="welcomeErrorMessage">
+                    Please enter your Prolific ID before starting the experiment.
+                </div>
+            </div>
+        </div>
+
         <!-- Stage 1: First Test (Questions 1-50) -->
-        <div class="stage active" id="stage1">
+        <div class="stage" id="stage1">
             <div class="question-card">
                 <div class="question-number" id="questionNumber">
                     Question 1 / 50
@@ -525,16 +586,16 @@
 
     <script>
         // ============ Firebase配置 - 请替换为您的实际配置 ============
-        const firebaseConfig = {
-            // 🔥 请在这里填入您从Firebase Console获取的配置信息！
-           apiKey: "AIzaSyDqo6mGblUWNrzEkigIyt9YaSXJS2zpxsg",
-           authDomain: "audio-listening-experime-257b2.firebaseapp.com",
-           projectId: "audio-listening-experime-257b2",
-           storageBucket: "audio-listening-experime-257b2.firebasestorage.app",
-           messagingSenderId: "489014203991",
-           appId: "1:489014203991:web:2fe3ceb5939da84c75f512"
+                 const firebaseConfig = {
+                apiKey: "AIzaSyDqo6mGblUWNrzEkigIyt9YaSXJS2zpxsg",
+               authDomain: "audio-listening-experime-257b2.firebaseapp.com",
+               projectId: "audio-listening-experime-257b2",
+                storageBucket: "audio-listening-experime-257b2.firebasestorage.app",
+               messagingSenderId: "489014203991",
+               appId: "1:489014203991:web:2fe3ceb5939da84c75f512",
+               measurementId: "G-3NKKYXHS0X"
+                 };
 
-        };
 
         // 检查Firebase配置是否已更新
         function checkFirebaseConfig() {
@@ -667,10 +728,8 @@
             }
 
             try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const prolificId = urlParams.get('PROLIFIC_PID') || 'test_user_' + Date.now();
-                
-                experimentData.prolificPID = prolificId;
+                // 使用用户输入的Prolific ID
+                const prolificId = experimentData.prolificPID || 'manual_input_' + Date.now();
                 
                 await db.collection('audio_experiment_sessions').doc(sessionId).set({
                     participantId: experimentData.participantId,
@@ -753,67 +812,41 @@
             }
         }
 
-        // ============ 鼠标追踪函数 ============
+        // ============ 鼠标追踪函数 (只在Review阶段，简化数据) ============
         function startMouseTracking() {
             isReviewPhase = true;
             mouseClickData = [];
             console.log('🖱️ 开始追踪Review阶段鼠标点击');
             
             document.addEventListener('click', recordMouseClick);
-            document.addEventListener('scroll', recordScrollEvent);
-            document.addEventListener('keypress', recordKeyPress);
         }
 
         function recordMouseClick(event) {
             if (!isReviewPhase) return;
             
+            // 简化的点击数据 - 只记录内容和时间
             const clickData = {
                 type: 'click',
-                timestamp: Date.now(),
-                x: event.clientX,
-                y: event.clientY,
-                pageX: event.pageX,
-                pageY: event.pageY,
-                target: {
-                    tagName: event.target.tagName,
-                    id: event.target.id,
-                    className: event.target.className,
-                    textContent: event.target.textContent?.substring(0, 100)
-                },
-                button: event.button,
-                ctrlKey: event.ctrlKey,
-                shiftKey: event.shiftKey,
-                altKey: event.altKey
+                timestamp: new Date().toLocaleString('zh-CN'),
+                clickedText: event.target.textContent?.substring(0, 100) || '',
+                elementType: event.target.tagName || '',
+                elementClass: event.target.className || '',
+                isSpellCheck: event.target.className?.includes('spell-error-text') || false,
+                isButton: event.target.tagName === 'BUTTON'
             };
             
             mouseClickData.push(clickData);
             experimentData.reviewPhaseClicks.push(clickData);
+            console.log('🖱️ Review点击记录:', clickData);
         }
 
+        // 移除滚动和按键追踪
         function recordScrollEvent(event) {
-            if (!isReviewPhase) return;
-            
-            const scrollData = {
-                type: 'scroll',
-                timestamp: Date.now(),
-                scrollX: window.scrollX,
-                scrollY: window.scrollY
-            };
-            
-            mouseClickData.push(scrollData);
+            // 不再记录滚动事件
         }
 
         function recordKeyPress(event) {
-            if (!isReviewPhase) return;
-            
-            const keyData = {
-                type: 'keypress',
-                timestamp: Date.now(),
-                key: event.key,
-                code: event.code
-            };
-            
-            mouseClickData.push(keyData);
+            // 不再记录按键事件
         }
 
         async function saveMouseTrackingData() {
@@ -822,13 +855,11 @@
             try {
                 const trackingData = {
                     sessionId: sessionId,
-                    phase: 'confirmation_page',
-                    totalClicks: mouseClickData.filter(d => d.type === 'click').length,
-                    totalScrolls: mouseClickData.filter(d => d.type === 'scroll').length,
-                    totalKeyPresses: mouseClickData.filter(d => d.type === 'keypress').length,
-                    timeSpentOnPage: mouseClickData.length > 0 ? 
-                        mouseClickData[mouseClickData.length - 1].timestamp - mouseClickData[0].timestamp : 0,
-                    clickEvents: mouseClickData,
+                    phase: 'review_page',
+                    totalClicks: mouseClickData.length,
+                    spellCheckClicks: mouseClickData.filter(d => d.isSpellCheck).length,
+                    buttonClicks: mouseClickData.filter(d => d.isButton).length,
+                    clickDetails: mouseClickData, // 简化的点击数据
                     timestamp: firebase.firestore.Timestamp.now()
                 };
                 
@@ -837,8 +868,6 @@
                 
                 // 清理事件监听器
                 document.removeEventListener('click', recordMouseClick);
-                document.removeEventListener('scroll', recordScrollEvent);
-                document.removeEventListener('keypress', recordKeyPress);
                 
                 isReviewPhase = false;
                 mouseClickData = [];
@@ -847,10 +876,36 @@
             }
         }
 
-        // ============ 原有实验逻辑 ============
+        // ============ 欢迎页面和实验开始 ============
+        function startExperiment() {
+            const prolificId = document.getElementById('prolificIdInput').value.trim();
+            
+            if (!prolificId) {
+                document.getElementById('welcomeErrorMessage').style.display = 'block';
+                document.getElementById('prolificIdInput').focus();
+                return;
+            }
+            
+            // 保存Prolific ID
+            experimentData.prolificPID = prolificId;
+            
+            // 切换到第一阶段
+            document.getElementById('welcomeStage').classList.remove('active');
+            document.getElementById('stage1').classList.add('active');
+            
+            // 更新进度显示
+            document.getElementById('progressText').textContent = 'Question 1 / 50';
+            
+            // 初始化第一个问题
+            setTimeout(() => {
+                initializeQuestion();
+            }, 500);
+        }
+        // 初始化Prolific数据 - 修改为从输入框获取
         function initializeProlificData() {
-            const urlParams = new URLSearchParams(window.location.search);
-            experimentData.prolificPID = urlParams.get('PROLIFIC_PID') || 'TEST_USER';
+            // Prolific ID现在从用户输入获取，不再从URL参数获取
+            const prolificId = experimentData.prolificPID || 'MANUAL_INPUT';
+            console.log('Prolific ID设置为:', prolificId);
         }
 
         function trackReviewClick(type, data) {
@@ -900,6 +955,7 @@
             }, 1000);
         }
 
+        // 页面跳转后自动开始倒计时和音频播放
         function autoStartAudio() {
             setTimeout(() => {
                 const activeStage = document.querySelector('.stage.active');
@@ -910,7 +966,54 @@
                 } else if (activeStage.id === 'stage3') {
                     startCountdown('playButton2', 'countdown2');
                 }
-            }, 100);
+            }, 500); // 增加延迟确保页面完全加载
+        }
+
+        // 强制自动播放 - 修复所有页面的音频播放
+        function forceAutoPlay() {
+            const activeStage = document.querySelector('.stage.active');
+            if (!activeStage) return;
+            
+            let buttonId, countdownId;
+            if (activeStage.id === 'stage1') {
+                buttonId = 'playButton';
+                countdownId = 'countdown';
+            } else if (activeStage.id === 'stage3') {
+                buttonId = 'playButton2';
+                countdownId = 'countdown2';
+            } else {
+                return;
+            }
+            
+            const button = document.getElementById(buttonId);
+            const countdownElement = document.getElementById(countdownId);
+            
+            if (!button || !countdownElement) return;
+            
+            // 清除现有计时器
+            if (countdownTimer) clearInterval(countdownTimer);
+            
+            // 重置按钮状态
+            button.disabled = false;
+            
+            // 立即开始倒计时
+            let timeLeft = 1;
+            countdownElement.textContent = timeLeft;
+            button.textContent = `🔊 Auto-play in ${timeLeft}s`;
+            
+            countdownTimer = setInterval(() => {
+                timeLeft--;
+                countdownElement.textContent = timeLeft;
+                button.textContent = `🔊 Auto-play in ${timeLeft}s`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdownTimer);
+                    // 确保音频能够播放
+                    setTimeout(() => {
+                        playRealAudio(buttonId);
+                    }, 100);
+                }
+            }, 1000);
         }
 
         function playRealAudio(buttonId) {
@@ -999,14 +1102,23 @@
                 
                 document.getElementById('errorMessage').style.display = 'none';
                 
+                // 重置播放按钮
+                const button = document.getElementById('playButton');
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = '🔊 Auto-play in 1s';
+                }
+                
+                // 自动聚焦到输入框
                 setTimeout(() => {
                     const input = document.getElementById('answerInput');
                     if (input) input.focus();
                 }, 100);
                 
+                // 强制自动播放音频 - 增加延迟确保成功
                 setTimeout(() => {
-                    autoStartAudio();
-                }, 200);
+                    forceAutoPlay();
+                }, 1000);
             }
         }
 
@@ -1027,14 +1139,23 @@
                 
                 document.getElementById('errorMessage2').style.display = 'none';
                 
+                // 重置播放按钮
+                const button = document.getElementById('playButton2');
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = '🔊 Auto-play in 1s';
+                }
+                
+                // 自动聚焦到输入框
                 setTimeout(() => {
                     const input = document.getElementById('answerInput2');
                     if (input) input.focus();
                 }, 100);
                 
+                // 强制自动播放音频 - 增加延迟确保成功
                 setTimeout(() => {
-                    autoStartAudio();
-                }, 200);
+                    forceAutoPlay();
+                }, 1000);
             }
         }
 
@@ -1200,7 +1321,10 @@
             
             document.getElementById('progressText').textContent = 'Starting Phase 2...';
             
-            initializeQuestion2();
+            // 确保在页面切换后立即开始音频播放
+            setTimeout(() => {
+                initializeQuestion2();
+            }, 100);
         }
 
         function goToStage4() {
@@ -1359,16 +1483,16 @@
             
             if (firebaseReady) {
                 console.log('✅ Firebase已就绪，开始记录数据');
-                await initializeExperiment();
             } else {
                 console.log('⚠️ Firebase未就绪，实验将在无数据记录模式下运行');
             }
             
-            initializeProlificData();
-            initializeQuestion();
-            
+            // 启用音频上下文（用户交互后）
             document.addEventListener('click', enableAudio, { once: true });
             document.addEventListener('keydown', enableAudio, { once: true });
+            
+            // 显示欢迎页面，不自动开始实验
+            console.log('显示欢迎页面，等待用户输入Prolific ID');
         });
 
         // 页面离开时清理
