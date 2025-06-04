@@ -366,8 +366,8 @@
     <div class="container">
         <div class="header">
             <h1>🎧 Audio Listening Experiment <span class="version-badge">v8.0</span></h1>
-            <div class="firebase-status connecting" id="firebaseStatus">🔄 请先配置Firebase...</div>
-            <p class="info-text">完整数据追踪系统 • 自动音频播放 • 100问测试</p>
+            <div class="firebase-status connecting" id="firebaseStatus">🔄 Please configure Firebase first...</div>
+            <p class="info-text">Complete Data Tracking System • Auto Audio Playback • 100 Question Test</p>
         </div>
 
         <div class="progress-container">
@@ -460,10 +460,10 @@
             <div class="feedback-section">
                 <h2>📝 Answer Review - Spell Check</h2>
                 <div class="mouse-tracking-info">
-                    <strong>注意：</strong> 在此页面上，我们将记录您的鼠标点击和页面交互行为，
-                    用于研究用户界面的使用模式。这些数据仅用于学术研究目的。
+                    <strong>Note:</strong> On this page, we will record your mouse clicks and page interaction behaviors 
+                    to study user interface usage patterns. This data is used solely for academic research purposes.
                 </div>
-                <p><strong>厳格判定:</strong> 完全一致のみ正解 | <strong>スペルチェック:</strong> 赤い波線をクリックして正解を確認</p>
+                <p><strong>Strict Scoring:</strong> Only exact matches count as correct | <strong>Spell Check:</strong> Click red wavy lines to see correct answers</p>
                 <div id="answersReview"></div>
                 <div class="button-group">
                     <button class="next-button" onclick="goToStage3()">Continue to Phase 2 →</button>
@@ -501,68 +501,160 @@
         <div class="stage" id="stage4">
             <div class="survey-section">
                 <h2>📋 Post-Experiment Survey</h2>
-                <p class="info-text">Thank you for completing the experiment!</p>
+                <p class="info-text">Thank you for completing the experiment! Please share your feedback.</p>
                 
                 <div class="survey-question">
-                    <label>1. How difficult did you find this experiment?</label>
+                    <label><strong>1. How difficult did you find this task?</strong></label>
                     <div class="radio-group">
                         <label class="radio-option">
-                            <input type="radio" name="difficulty" value="very_easy"> Very Easy
+                            <input type="radio" name="difficulty" value="very_difficult"> Very difficult
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="difficulty" value="difficult"> Difficult
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="difficulty" value="neutral"> Neutral
                         </label>
                         <label class="radio-option">
                             <input type="radio" name="difficulty" value="easy"> Easy
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="difficulty" value="medium"> Medium
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="difficulty" value="hard"> Hard
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="difficulty" value="very_hard"> Very Hard
+                            <input type="radio" name="difficulty" value="very_easy"> Very easy
                         </label>
                     </div>
                 </div>
 
                 <div class="survey-question">
-                    <label>2. How was the auto-play audio feature?</label>
+                    <label><strong>2. How confident are you in your answers to the previous questions?</strong></label>
                     <div class="radio-group">
                         <label class="radio-option">
-                            <input type="radio" name="audio_feature" value="excellent"> Excellent
+                            <input type="radio" name="confidence" value="very_confident"> Very confident
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="audio_feature" value="good"> Good
+                            <input type="radio" name="confidence" value="confident"> Confident
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="audio_feature" value="fair"> Fair
+                            <input type="radio" name="confidence" value="neutral"> Neutral
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="audio_feature" value="poor"> Poor
+                            <input type="radio" name="confidence" value="not_very_confident"> Not very confident
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="confidence" value="not_confident_at_all"> Not confident at all
                         </label>
                     </div>
                 </div>
 
                 <div class="survey-question">
-                    <label>3. Did the strict answer matching system work well?</label>
+                    <label><strong>3. Do you often notice your own spelling mistakes in your daily work or studies?</strong></label>
                     <div class="radio-group">
                         <label class="radio-option">
-                            <input type="radio" name="strict_matching" value="very_helpful"> Very Helpful
+                            <input type="radio" name="notice_mistakes" value="yes"> Yes
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="strict_matching" value="helpful"> Helpful
+                            <input type="radio" name="notice_mistakes" value="no"> No
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="strict_matching" value="neutral"> Neutral
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="strict_matching" value="not_helpful"> Not Helpful
+                            <input type="radio" name="notice_mistakes" value="not_sure"> Not sure
                         </label>
                     </div>
                 </div>
 
                 <div class="survey-question">
-                    <label>4. Additional comments about the experiment:</label>
-                    <textarea class="survey-input" rows="4" id="additionalComments" placeholder="Please share your feedback..."></textarea>
+                    <label><strong>4. Do you use a spell checker in your daily work or studies?</strong></label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="use_spell_checker" value="yes" onchange="toggleSpellCheckerQuestions(true)"> Yes
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="use_spell_checker" value="no" onchange="toggleSpellCheckerQuestions(false)"> No
+                        </label>
+                    </div>
+                </div>
+
+                <div class="survey-question" id="spellCheckerSubQuestions" style="display: none;">
+                    <label><strong>4-1. Which spell-checking tools do you use? (Select all that apply)</strong></label>
+                    <div style="margin-top: 10px;">
+                        <label class="radio-option" style="display: block; margin-bottom: 8px;">
+                            <input type="checkbox" name="spell_checker_tools" value="microsoft_word"> Microsoft Word Spell Checker
+                        </label>
+                        <label class="radio-option" style="display: block; margin-bottom: 8px;">
+                            <input type="checkbox" name="spell_checker_tools" value="google_docs"> Google Docs Spell Checker
+                        </label>
+                        <label class="radio-option" style="display: block; margin-bottom: 8px;">
+                            <input type="checkbox" name="spell_checker_tools" value="grammarly"> Grammarly
+                        </label>
+                        <label class="radio-option" style="display: block; margin-bottom: 8px;">
+                            <input type="checkbox" name="spell_checker_tools" value="browser_spell_checker"> Built-in browser spell checker (e.g., Chrome, Firefox)
+                        </label>
+                        <label class="radio-option" style="display: block; margin-bottom: 8px;">
+                            <input type="checkbox" name="spell_checker_tools" value="mobile_autocorrect"> Mobile keyboard autocorrect (e.g., Gboard, iOS)
+                        </label>
+                        <label class="radio-option" style="display: block; margin-bottom: 8px;">
+                            <input type="checkbox" name="spell_checker_tools" value="other" onchange="toggleOtherInput(this)"> Other:
+                            <input type="text" id="otherSpellChecker" placeholder="Please specify..." style="margin-left: 10px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; width: 200px;" disabled>
+                        </label>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <label><strong>4-2. Does using a spell checker help you avoid making the same mistakes in the future?</strong></label>
+                        <div class="radio-group" style="margin-top: 10px;">
+                            <label class="radio-option">
+                                <input type="radio" name="spell_checker_helpful" value="very_helpful"> Very helpful
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="spell_checker_helpful" value="helpful"> Helpful
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="spell_checker_helpful" value="neutral"> Neutral
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="spell_checker_helpful" value="not_very_helpful"> Not very helpful
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="spell_checker_helpful" value="not_helpful_at_all"> Not helpful at all
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="survey-question">
+                    <label><strong>5. After Phase 1, there was a stage to confirm your mistakes. Did you proofread your writing at that stage?</strong></label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="proofreading" value="carefully_proofread"> Yes, I carefully proofread and checked the corrections.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="proofreading" value="briefly_looked"> Yes, I briefly looked at the mistakes.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="proofreading" value="skipped"> No, I skipped the proofreading stage.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="proofreading" value="dont_remember"> I don't remember.
+                        </label>
+                    </div>
+                </div>
+
+                <div class="survey-question">
+                    <label><strong>6. For the mistakes pointed out in Phase 1, did you improve on them in Phase 2?</strong></label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="improvement" value="corrected_most"> Yes, I corrected most or all of them.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="improvement" value="corrected_some"> I corrected some of them.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="improvement" value="tried_but_failed"> I tried, but I still made the same mistakes.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="improvement" value="didnt_try"> I didn't try to improve them.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="improvement" value="dont_remember"> I don't remember.
+                        </label>
+                    </div>
                 </div>
 
                 <div class="button-group">
@@ -585,7 +677,7 @@
     </div>
 
     <script>
-        // ============ Firebase配置 - 请替换为您的实际配置 ============
+        // ============ Firebase配置 ============
                  const firebaseConfig = {
                 apiKey: "AIzaSyDqo6mGblUWNrzEkigIyt9YaSXJS2zpxsg",
                authDomain: "audio-listening-experime-257b2.firebaseapp.com",
@@ -603,7 +695,7 @@
             const statusElement = document.getElementById('firebaseStatus');
             
             if (!isConfigured) {
-                statusElement.textContent = '❌ 请先配置Firebase信息';
+                statusElement.textContent = '❌ Please configure Firebase information first';
                 statusElement.className = 'firebase-status';
                 console.error('🔥 Firebase配置未完成！请按照指南配置Firebase信息。');
                 return false;
@@ -622,7 +714,7 @@
             }
 
             try {
-                document.getElementById('firebaseStatus').textContent = '🔄 连接Firebase中...';
+                document.getElementById('firebaseStatus').textContent = '🔄 Connecting to Firebase...';
                 document.getElementById('firebaseStatus').className = 'firebase-status connecting';
                 
                 firebase.initializeApp(firebaseConfig);
@@ -631,14 +723,14 @@
                 // 测试连接
                 await db.collection('test').get();
                 
-                document.getElementById('firebaseStatus').textContent = '✅ Firebase已连接';
+                document.getElementById('firebaseStatus').textContent = '✅ Firebase Connected';
                 document.getElementById('firebaseStatus').className = 'firebase-status connected';
                 
                 firebaseInitialized = true;
                 console.log('🔥 Firebase初始化成功！');
                 return true;
             } catch (error) {
-                document.getElementById('firebaseStatus').textContent = '❌ Firebase连接失败';
+                document.getElementById('firebaseStatus').textContent = '❌ Firebase Connection Failed';
                 document.getElementById('firebaseStatus').className = 'firebase-status';
                 console.error('❌ Firebase初始化失败:', error);
                 return false;
@@ -1335,6 +1427,38 @@
             document.getElementById('progressText').textContent = 'Survey Phase';
         }
 
+        // 切换拼写检查子问题的显示
+        function toggleSpellCheckerQuestions(show) {
+            const subQuestions = document.getElementById('spellCheckerSubQuestions');
+            if (subQuestions) {
+                subQuestions.style.display = show ? 'block' : 'none';
+                
+                // 如果隐藏了子问题，清除已选择的答案
+                if (!show) {
+                    const checkboxes = subQuestions.querySelectorAll('input[type="checkbox"]');
+                    checkboxes.forEach(cb => cb.checked = false);
+                    const radios = subQuestions.querySelectorAll('input[type="radio"]');
+                    radios.forEach(radio => radio.checked = false);
+                    const otherInput = document.getElementById('otherSpellChecker');
+                    if (otherInput) {
+                        otherInput.value = '';
+                        otherInput.disabled = true;
+                    }
+                }
+            }
+        }
+
+        // 切换"其他"输入框的启用状态
+        function toggleOtherInput(checkbox) {
+            const otherInput = document.getElementById('otherSpellChecker');
+            if (otherInput) {
+                otherInput.disabled = !checkbox.checked;
+                if (!checkbox.checked) {
+                    otherInput.value = '';
+                }
+            }
+        }
+
         async function completeExperiment() {
             const spinner = document.getElementById('submitSpinner');
             const button = event.target;
@@ -1344,14 +1468,29 @@
             
             const surveyData = {};
             
-            ['difficulty', 'audio_feature', 'strict_matching'].forEach(name => {
+            // 收集单选题答案
+            ['difficulty', 'confidence', 'notice_mistakes', 'use_spell_checker', 'spell_checker_helpful', 'proofreading', 'improvement'].forEach(name => {
                 const radio = document.querySelector(`input[name="${name}"]:checked`);
                 if (radio) {
                     surveyData[name] = radio.value;
                 }
             });
             
-            surveyData.additionalComments = document.getElementById('additionalComments').value;
+            // 收集多选题答案（拼写检查工具）
+            const spellCheckerTools = [];
+            const toolCheckboxes = document.querySelectorAll('input[name="spell_checker_tools"]:checked');
+            toolCheckboxes.forEach(checkbox => {
+                if (checkbox.value === 'other') {
+                    const otherValue = document.getElementById('otherSpellChecker').value.trim();
+                    if (otherValue) {
+                        spellCheckerTools.push(`other: ${otherValue}`);
+                    }
+                } else {
+                    spellCheckerTools.push(checkbox.value);
+                }
+            });
+            surveyData.spell_checker_tools = spellCheckerTools;
+            
             experimentData.surveyResponses = surveyData;
             experimentData.timestamps.experimentComplete = Date.now();
             
