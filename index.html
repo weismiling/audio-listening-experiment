@@ -773,7 +773,7 @@
 
         // 50个问题数据
         const audioQuestions = [
-            { sentence: "The government has ____ that the new tax policy has been a disaster.", answer: "conceded", audio: "audio/concede.mp3" },
+            { sentence: "The government has ____ that the new tax policy has been a disaster.", answer: "concede", audio: "audio/concede.mp3" },
             { sentence: "He's got a lot of ____ degrees and awards from educational establishments worldwide.", answer: "honorary", audio: "audio/honorary.mp3" },
             { sentence: "As people ____ more wealth, they tend to spend a greater proportion of their incomes.", answer: "accumulate", audio: "audio/accumulate.mp3" },
             { sentence: "Plant growth is most ____ in spring and early summer.", answer: "noticeable", audio: "audio/noticeable.mp3" },
@@ -916,14 +916,16 @@
                     audioFile: audioFile,
                     userAnswer: userAnswer,
                     correctAnswer: correctAnswer,
-                    isCorrect: userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim(),
+                    isCorrect: strictAnswerCheck(userAnswer, correctAnswer), // 使用包含匹配
+                    isCorrectExact: exactAnswerCheck(userAnswer, correctAnswer), // 新增：严格匹配结果
+                    isCorrectContains: strictAnswerCheck(userAnswer, correctAnswer), // 新增：包含匹配结果
                     responseTime: responseTime,
                     playButtonClicks: playCount, // 新增：播放次数
                     timestamp: firebase.firestore.Timestamp.now()
                 };
                 
                 await db.collection('phase1_answers').add(answerData);
-                console.log(`📝 阶段1 问题${questionNumber} 已记录 (播放${playCount}次)`);
+                console.log(`📝 阶段1 问题${questionNumber} 已记录 (播放${playCount}次, 包含匹配: ${answerData.isCorrect})`);
                 
                 if (questionNumber === 50) {
                     await db.collection('audio_experiment_sessions').doc(sessionId).update({
@@ -947,14 +949,16 @@
                     audioFile: audioFile,
                     userAnswer: userAnswer,
                     correctAnswer: correctAnswer,
-                    isCorrect: userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim(),
+                    isCorrect: strictAnswerCheck(userAnswer, correctAnswer), // 使用包含匹配
+                    isCorrectExact: exactAnswerCheck(userAnswer, correctAnswer), // 新增：严格匹配结果
+                    isCorrectContains: strictAnswerCheck(userAnswer, correctAnswer), // 新增：包含匹配结果
                     responseTime: responseTime,
                     playButtonClicks: playCount, // 新增：播放次数
                     timestamp: firebase.firestore.Timestamp.now()
                 };
                 
                 await db.collection('phase2_answers').add(answerData);
-                console.log(`📝 阶段2 问题${questionNumber + 50} 已记录 (播放${playCount}次)`);
+                console.log(`📝 阶段2 问题${questionNumber + 50} 已记录 (播放${playCount}次, 包含匹配: ${answerData.isCorrect})`);
                 
                 if (questionNumber === 49) { // 第二轮的第50题
                     await db.collection('audio_experiment_sessions').doc(sessionId).update({
@@ -1119,13 +1123,27 @@
         }
 
         function strictAnswerCheck(userAnswer, correctAnswer) {
+            // 新的包含匹配逻辑 - 只要用户答案包含目标词汇就算正确
+            const userAnswerLower = userAnswer.toLowerCase().trim();
+            const correctAnswerLower = correctAnswer.toLowerCase().trim();
+            
+            // 检查用户答案是否包含正确答案
+            const isContained = userAnswerLower.includes(correctAnswerLower);
+            
+            console.log(`📝 答案检查: 用户答案"${userAnswer}" ${isContained ? '包含' : '不包含'} 目标词汇"${correctAnswer}"`);
+            
+            return isContained;
+        }
+
+        // 新增：为了向后兼容，保留原始严格匹配函数
+        function exactAnswerCheck(userAnswer, correctAnswer) {
             return userAnswer.trim() === correctAnswer.trim();
         }
 
         function calculateAccuracy(answers) {
             if (answers.length === 0) return 0;
             const correct = answers.filter(answer => 
-                strictAnswerCheck(answer.userAnswer, answer.correctAnswer)
+                strictAnswerCheck(answer.userAnswer, answer.correctAnswer) // 使用新的包含匹配逻辑
             ).length;
             return Math.round((correct / answers.length) * 100);
         }
@@ -1384,7 +1402,7 @@
             }
             
             const correctAnswer = audioQuestions[currentQuestionIndex].answer;
-            const isCorrect = strictAnswerCheck(answer, correctAnswer);
+            const isCorrect = strictAnswerCheck(answer, correctAnswer); // 使用包含匹配
             const responseTime = Date.now() - experimentData.timestamps.start;
             const playCount = currentQuestionPlayCount;
             
@@ -1394,7 +1412,10 @@
                 correctAnswer: correctAnswer,
                 isCorrect: isCorrect,
                 timestamp: Date.now(),
-                playCount: playCount // 新增：记录播放次数
+                playCount: playCount, // 新增：记录播放次数
+                // 新增：记录两种判定结果以便分析
+                isCorrectExact: exactAnswerCheck(answer, correctAnswer), // 严格匹配结果
+                isCorrectContains: isCorrect // 包含匹配结果 (当前使用的标准)
             });
             
             // Firebase记录
@@ -1427,7 +1448,7 @@
             }
             
             const correctAnswer = audioQuestions[currentQuestionIndex].answer;
-            const isCorrect = strictAnswerCheck(answer, correctAnswer);
+            const isCorrect = strictAnswerCheck(answer, correctAnswer); // 使用包含匹配
             const responseTime = Date.now() - experimentData.timestamps.start;
             const playCount = currentQuestionPlayCount;
             
@@ -1437,7 +1458,10 @@
                 correctAnswer: correctAnswer,
                 isCorrect: isCorrect,
                 timestamp: Date.now(),
-                playCount: playCount // 新增：记录播放次数
+                playCount: playCount, // 新增：记录播放次数
+                // 新增：记录两种判定结果以便分析
+                isCorrectExact: exactAnswerCheck(answer, correctAnswer), // 严格匹配结果
+                isCorrectContains: isCorrect // 包含匹配结果 (当前使用的标准)
             });
             
             // Firebase记录
