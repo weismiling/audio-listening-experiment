@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Listening Experiment v8.0</title>
+    <title>Audio Listening Experiment </title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -28,18 +33,6 @@
             max-width: 900px;
             width: 90%;
             margin: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
         }
 
         .header {
@@ -51,16 +44,12 @@
             color: #333;
             font-size: 2.8em;
             margin-bottom: 15px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             font-weight: 700;
-            letter-spacing: -1px;
         }
 
         .version-badge {
             display: inline-block;
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: #667eea;
             color: white;
             padding: 4px 12px;
             border-radius: 20px;
@@ -69,24 +58,32 @@
             margin-left: 10px;
         }
 
+        .firebase-status {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin-top: 10px;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .firebase-status.connected {
+            background: #28a745;
+        }
+
+        .firebase-status.connecting {
+            background: #ffc107;
+            color: #333;
+        }
+
         .stage {
             display: none;
         }
 
         .stage.active {
             display: block;
-            animation: fadeInUp 0.6s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            from { 
-                opacity: 0; 
-                transform: translateY(30px); 
-            }
-            to { 
-                opacity: 1; 
-                transform: translateY(0); 
-            }
         }
 
         .progress-container {
@@ -96,7 +93,6 @@
         .progress-info {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             margin-bottom: 10px;
             font-weight: 600;
             color: #667eea;
@@ -108,41 +104,21 @@
             background-color: #e8ecf4;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            background: #667eea;
             width: 0%;
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-        }
-
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+            transition: width 0.4s ease;
         }
 
         .question-card {
-            background: linear-gradient(145deg, #f8f9ff, #ffffff);
+            background: #f8f9ff;
             border-radius: 20px;
             padding: 35px;
             margin-bottom: 25px;
             border: 1px solid rgba(102, 126, 234, 0.1);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-            position: relative;
         }
 
         .question-number {
@@ -150,24 +126,6 @@
             font-weight: 700;
             font-size: 1.3em;
             margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .question-number::before {
-            content: '🎯';
-            font-size: 1.2em;
-        }
-
-        .round-indicator {
-            background: linear-gradient(45deg, #28a745, #20c997);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            font-weight: 600;
-            margin-left: auto;
         }
 
         .audio-controls {
@@ -176,7 +134,7 @@
         }
 
         .play-button {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: #667eea;
             color: white;
             border: none;
             padding: 18px 35px;
@@ -184,38 +142,16 @@
             font-size: 1.2em;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-            position: relative;
-            overflow: hidden;
             min-width: 240px;
         }
 
         .play-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+            background: #5a6fd8;
         }
 
         .play-button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
-            transform: none;
-        }
-
-        .countdown-circle {
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top: 3px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         .sentence-display {
@@ -224,63 +160,41 @@
             text-align: center;
             line-height: 2.2;
             padding: 25px;
-            background: rgba(255, 255, 255, 0.9);
+            background: white;
             border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-            border: 1px solid rgba(102, 126, 234, 0.08);
         }
 
         .input-field {
-            display: inline-block;
             border: none;
             border-bottom: 3px solid #667eea;
-            background: linear-gradient(145deg, #ffffff, #f8f9ff);
+            background: white;
             font-size: 1.3em;
             padding: 12px 16px;
             margin: 0 10px;
-            min-width: 160px;
-            max-width: 220px;
-            width: auto;
+            min-width: 200px;
+            max-width: 250px;
             text-align: center;
             outline: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 8px 8px 0 0;
-            font-weight: 500;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-
-        .input-field:focus {
-            border-bottom-color: #764ba2;
-            background: linear-gradient(145deg, #f8f9ff, #ffffff);
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.25);
-            transform: translateY(-2px);
-        }
-
-        .input-field.spell-error {
-            border-bottom: 3px wavy #e74c3c !important;
-            background-color: rgba(231, 76, 60, 0.08) !important;
-            animation: shake 0.5s ease-in-out;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
         }
 
         .spell-error-text {
-            border-bottom: 3px wavy #e74c3c !important;
-            background-color: rgba(231, 76, 60, 0.08) !important;
-            padding: 3px 6px !important;
-            border-radius: 6px !important;
-            cursor: pointer !important;
-            transition: all 0.3s ease !important;
-            position: relative !important;
+            border-bottom: 3px wavy #e74c3c;
+            background-color: rgba(231, 76, 60, 0.15);
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            text-decoration: underline;
+            text-decoration-color: #e74c3c;
+            text-decoration-style: wavy;
+            text-decoration-thickness: 2px;
+            font-weight: 500;
         }
 
         .spell-error-text:hover {
-            background-color: rgba(231, 76, 60, 0.15) !important;
-            transform: translateY(-1px);
+            background-color: rgba(231, 76, 60, 0.25);
+            text-decoration-thickness: 3px;
         }
 
         .word-correction-popup {
@@ -291,29 +205,16 @@
             padding: 12px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.15);
             z-index: 1000;
-            animation: popupFadeIn 0.4s ease;
-            min-width: 150px;
-        }
-
-        @keyframes popupFadeIn {
-            from { opacity: 0; transform: translateY(-10px) scale(0.9); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .correction-option {
             padding: 8px 12px;
-            border-radius: 6px;
             font-weight: 600;
             color: #28a745;
-            cursor: pointer;
-        }
-
-        .correction-option:hover {
-            background-color: #f8f9fa;
         }
 
         .next-button, .submit-button {
-            background: linear-gradient(45deg, #28a745, #20c997);
+            background: #28a745;
             color: white;
             border: none;
             padding: 15px 35px;
@@ -322,31 +223,26 @@
             font-weight: 600;
             cursor: pointer;
             margin: 25px 15px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
         }
 
         .next-button:hover, .submit-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(40, 167, 69, 0.4);
+            background: #218838;
         }
 
         .feedback-section {
-            background: linear-gradient(145deg, #e8f5e8, #f0f8f0);
+            background: #e8f5e8;
             border-radius: 20px;
             padding: 30px;
             margin: 25px 0;
             border-left: 6px solid #28a745;
-            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.1);
         }
 
         .survey-section {
-            background: linear-gradient(145deg, #fff3cd, #fffadc);
+            background: #fff3cd;
             border-radius: 20px;
             padding: 30px;
             margin: 25px 0;
             border-left: 6px solid #ffc107;
-            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.1);
         }
 
         .survey-question {
@@ -367,15 +263,7 @@
             border: 2px solid #e1e8ed;
             border-radius: 12px;
             font-size: 1em;
-            transition: all 0.3s ease;
             font-family: inherit;
-            resize: vertical;
-        }
-
-        .survey-input:focus {
-            border-color: #667eea;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .radio-group {
@@ -392,35 +280,19 @@
             cursor: pointer;
             padding: 8px 12px;
             border-radius: 8px;
-            transition: background-color 0.2s ease;
-        }
-
-        .radio-option:hover {
-            background-color: rgba(102, 126, 234, 0.05);
-        }
-
-        .radio-option input[type="radio"] {
-            width: 18px;
-            height: 18px;
-            accent-color: #667eea;
         }
 
         .completion-message {
             text-align: center;
             padding: 50px;
-            background: linear-gradient(135deg, #28a745, #20c997);
+            background: #28a745;
             color: white;
             border-radius: 24px;
-            box-shadow: 0 15px 40px rgba(40, 167, 69, 0.3);
         }
 
         .completion-message h2 {
             font-size: 3em;
             margin-bottom: 25px;
-        }
-
-        .completion-message p {
-            font-size: 1.3em;
         }
 
         .button-group {
@@ -444,12 +316,10 @@
         }
 
         .stat-card {
-            background: linear-gradient(145deg, #f8f9ff, #ffffff);
+            background: white;
             padding: 25px;
             border-radius: 16px;
             text-align: center;
-            border: 1px solid rgba(102, 126, 234, 0.1);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
         }
 
         .stat-number {
@@ -465,14 +335,7 @@
             padding: 12px 16px;
             border-radius: 8px;
             margin: 15px 0;
-            border: 1px solid #f5c6cb;
             display: none;
-            animation: slideDown 0.3s ease;
-        }
-
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .loading-spinner {
@@ -482,118 +345,111 @@
             border: 3px solid rgba(255,255,255,0.3);
             border-radius: 50%;
             border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
+            animation: spin 1s linear infinite;
             margin-right: 10px;
         }
 
-        .accuracy-indicator {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255,255,255,0.9);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.9em;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .accuracy-indicator.good {
-            color: #28a745;
-            border-left: 4px solid #28a745;
-        }
-
-        .accuracy-indicator.average {
-            color: #ffc107;
+        .mouse-tracking-info {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
             border-left: 4px solid #ffc107;
         }
 
-        .accuracy-indicator.poor {
-            color: #dc3545;
-            border-left: 4px solid #dc3545;
-        }
+        /* 移除：播放统计显示样式 */
 
-        /* Mobile responsiveness */
-        @media (max-width: 768px) {
-            .container {
-                padding: 25px;
-                margin: 15px;
-            }
-            
-            .header h1 {
-                font-size: 2.2em;
-            }
-            
-            .sentence-display {
-                font-size: 1.2em;
-                padding: 20px;
-            }
-            
-            .input-field {
-                min-width: 140px;
-                max-width: 180px;
-                font-size: 1.1em;
-            }
-            
-            .radio-group {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .play-button {
-                min-width: 200px;
-                padding: 15px 25px;
-            }
-
-            .stats-display {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .stats-display {
-                grid-template-columns: 1fr;
-            }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎧 Audio Listening Experiment <span class="version-badge">v8.0</span></h1>
-            <p class="info-text">厳格判定システム • 自動再生機能 • 100問総計 (50問 × 2ラウンド)</p>
+            <h1>🎧 Audio Listening Experiment </h1>
+            <div class="firebase-status connecting" id="firebaseStatus">🔄 Please configure Firebase first...</div>
+            <p class="info-text"> </p>
         </div>
 
         <div class="progress-container">
             <div class="progress-info">
-                <span id="progressText">Round 1: Question 1 / 50</span>
-                <span id="accuracyDisplay">Accuracy: 0%</span>
+                <span id="progressText">Question 1 / 50</span>
             </div>
             <div class="progress-bar">
                 <div class="progress-fill" id="progressFill"></div>
             </div>
         </div>
 
-        <!-- Stage 1: Audio Fill-in-the-Blank Test - Round 1 -->
-        <div class="stage active" id="stage1">
+        <!-- Welcome Stage: Experiment Introduction -->
+        <div class="stage active" id="welcomeStage">
             <div class="question-card">
-                <div class="accuracy-indicator good" id="accuracyIndicator">
-                    Accuracy: 0%
+                <h2 style="text-align: center; color: #667eea; margin-bottom: 30px;">🎧 Welcome to Audio Listening Experiment</h2>
+                
+                <div style="background: #e3f2fd; padding: 25px; border-radius: 15px; margin-bottom: 25px;">
+                    <h3 style="color: #1976d2; margin-bottom: 20px;">📋 Experiment Instructions:</h3>
+                    <ul style="line-height: 2; color: #333; font-size: 1.1em;">
+                        <li><strong>Duration:</strong> Approximately 20-30 minutes</li>
+                        <li><strong>Structure:</strong> 100 audio questions in 2 phases (50 each)</li>
+                        <li><strong>Task:</strong> Listen to audio and fill in the missing word</li>
+                        <li><strong>Audio:</strong> Each audio will auto-play after 1 second</li>
+                        <li><strong>Review:</strong> You can review your answers between phases</li>
+                        <li><strong>Requirements:</strong> Use headphones for best audio quality</li>
+                    </ul>
                 </div>
+                
+                <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+                    <h4 style="color: #856404; margin-bottom: 15px;">⚠️ Important Notes:</h4>
+                    <ul style="color: #856404; line-height: 1.8;">
+                        <li>Please ensure you have a stable internet connection</li>
+                        <li>Use headphones or speakers for clear audio</li>
+                        <li>Complete the experiment in one session without refreshing</li>
+                        <li>Your responses will be automatically saved</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+                    <label style="display: block; font-weight: 600; font-size: 1.2em; color: #333; margin-bottom: 10px;">
+                        🆔 Please enter your Prolific ID:
+                    </label>
+                    <input type="text" id="prolificIdInput" placeholder="Enter your Prolific ID here..." 
+                           style="width: 100%; padding: 15px; font-size: 1.1em; border: 2px solid #667eea; border-radius: 8px; margin-bottom: 15px;">
+                    <p style="color: #666; font-size: 0.9em; margin: 0;">
+                        This ID is provided by Prolific and is required to receive payment.
+                    </p>
+                </div>
+                
+                <div class="button-group" style="text-align: center;">
+                    <button class="next-button" onclick="startExperiment()" id="startExperimentBtn" style="font-size: 1.3em; padding: 18px 40px;">
+                         Start Experiment
+                    </button>
+                </div>
+                
+                <div class="error-message" id="welcomeErrorMessage">
+                    Please enter your Prolific ID before starting the experiment.
+                </div>
+            </div>
+        </div>
+
+        <!-- Stage 1: First Test (Questions 1-50) -->
+        <div class="stage" id="stage1">
+            <div class="question-card">
                 <div class="question-number" id="questionNumber">
                     Question 1 / 50
-                    <span class="round-indicator">Round 1</span>
                 </div>
                 <div class="audio-controls">
                     <button class="play-button" id="playButton" onclick="playAudio()">
-                        🔊 Auto-play in <span id="countdown">3</span>s
+                        🔊 Auto-play in <span id="countdown">1</span>s
                     </button>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                        * If audio doesn't auto-play, please click the button
+                    </p>
                 </div>
                 <div class="sentence-display" id="sentenceDisplay">
                     Loading question...
                 </div>
                 <div class="error-message" id="errorMessage">
-                    Please fill in the blank before proceeding to the next question.
+                    Please fill in the blank before proceeding.
                 </div>
                 <div class="button-group">
                     <button class="next-button" onclick="nextQuestion()">Next Question →</button>
@@ -601,38 +457,41 @@
             </div>
         </div>
 
-        <!-- Stage 2: Answer Review and Spell Check -->
+        <!-- Stage 2: Answer Review (Mouse tracking) -->
         <div class="stage" id="stage2">
             <div class="feedback-section">
-                <h2>📝 Round 1 Results - Spell Check Review</h2>
-                <p><strong>厳格判定:</strong> 完全一致のみ正解 | <strong>スペルチェック:</strong> 赤い波線をクリックして正解を確認</p>
+                <h2>📝 Answer Review - Spell Check</h2>
+                <div class="mouse-tracking-info">
+                    <strong>Note:</strong> On this page, we will record your mouse clicks and page interaction behaviors 
+                    to study user interface usage patterns. This data is used solely for academic research purposes.
+                </div>
+                <p><strong>Strict Scoring:</strong> Only exact matches count as correct | <strong>Spell Check:</strong> Click red wavy lines to see correct answers</p>
                 <div id="answersReview"></div>
                 <div class="button-group">
-                    <button class="next-button" onclick="goToStage3()">Continue to Round 2 →</button>
+                    <button class="next-button" onclick="goToStage3()">Continue to Phase 2 →</button>
                 </div>
             </div>
         </div>
 
-        <!-- Stage 3: Second Round Test -->
+        <!-- Stage 3: Second Test (Questions 51-100) -->
         <div class="stage" id="stage3">
             <div class="question-card">
-                <div class="accuracy-indicator good" id="accuracyIndicator2">
-                    Round 2 Accuracy: 0%
-                </div>
                 <div class="question-number" id="questionNumber2">
-                    Question 1 / 50
-                    <span class="round-indicator" style="background: linear-gradient(45deg, #dc3545, #e74c3c);">Round 2</span>
+                    Question 51 / 100
                 </div>
                 <div class="audio-controls">
                     <button class="play-button" id="playButton2" onclick="playAudio2()">
-                        🔊 Auto-play in <span id="countdown2">3</span>s
+                        🔊 Auto-play in <span id="countdown2">1</span>s
                     </button>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                        * If audio doesn't auto-play, please click the button
+                    </p>
                 </div>
                 <div class="sentence-display" id="sentenceDisplay2">
                     Loading question...
                 </div>
                 <div class="error-message" id="errorMessage2">
-                    Please fill in the blank before proceeding to the next question.
+                    Please fill in the blank before proceeding.
                 </div>
                 <div class="button-group">
                     <button class="next-button" onclick="nextQuestion2()">Next Question →</button>
@@ -640,72 +499,164 @@
             </div>
         </div>
 
-        <!-- Stage 4: Post-Experiment Survey -->
+        <!-- Stage 4: Survey -->
         <div class="stage" id="stage4">
             <div class="survey-section">
                 <h2>📋 Post-Experiment Survey</h2>
-                <p class="info-text">Total Questions Completed: <strong>100 questions</strong> (50 × 2 rounds)</p>
+                <p class="info-text">Thank you for completing the experiment! Please share your feedback.</p>
                 
                 <div class="survey-question">
-                    <label>1. How difficult did you find this experiment?</label>
+                    <label><strong>1. How difficult did you find this task?</strong></label>
                     <div class="radio-group">
                         <label class="radio-option">
-                            <input type="radio" name="difficulty" value="very_easy"> Very Easy
+                            <input type="radio" name="difficulty" value="very_difficult"> Very difficult
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="difficulty" value="difficult"> Difficult
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="difficulty" value="neutral"> Neutral
                         </label>
                         <label class="radio-option">
                             <input type="radio" name="difficulty" value="easy"> Easy
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="difficulty" value="medium"> Medium
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="difficulty" value="hard"> Hard
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="difficulty" value="very_hard"> Very Hard
+                            <input type="radio" name="difficulty" value="very_easy"> Very easy
                         </label>
                     </div>
                 </div>
 
                 <div class="survey-question">
-                    <label>2. How was the auto-play audio feature?</label>
+                    <label><strong>2. How confident are you in your answers to the previous questions?</strong></label>
                     <div class="radio-group">
                         <label class="radio-option">
-                            <input type="radio" name="audio_feature" value="excellent"> Excellent
+                            <input type="radio" name="confidence" value="very_confident"> Very confident
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="audio_feature" value="good"> Good
+                            <input type="radio" name="confidence" value="confident"> Confident
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="audio_feature" value="fair"> Fair
+                            <input type="radio" name="confidence" value="neutral"> Neutral
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="audio_feature" value="poor"> Poor
+                            <input type="radio" name="confidence" value="not_very_confident"> Not very confident
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="confidence" value="not_confident_at_all"> Not confident at all
                         </label>
                     </div>
                 </div>
 
                 <div class="survey-question">
-                    <label>3. Did the strict answer matching system work well?</label>
+                    <label><strong>3. Do you often notice your own spelling mistakes in your daily work or studies?</strong></label>
                     <div class="radio-group">
                         <label class="radio-option">
-                            <input type="radio" name="strict_matching" value="very_helpful"> Very Helpful
+                            <input type="radio" name="notice_mistakes" value="yes"> Yes
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="strict_matching" value="helpful"> Helpful
+                            <input type="radio" name="notice_mistakes" value="no"> No
                         </label>
                         <label class="radio-option">
-                            <input type="radio" name="strict_matching" value="neutral"> Neutral
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="strict_matching" value="not_helpful"> Not Helpful
+                            <input type="radio" name="notice_mistakes" value="not_sure"> Not sure
                         </label>
                     </div>
                 </div>
 
                 <div class="survey-question">
-                    <label>4. Additional comments about the experiment:</label>
-                    <textarea class="survey-input" rows="4" id="additionalComments" placeholder="Please share your feedback about the 100-question experiment..."></textarea>
+                    <label><strong>4. Do you use a spell checker in your daily work or studies?</strong></label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="use_spell_checker" value="yes" onchange="toggleSpellCheckerQuestions(true)"> Yes
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="use_spell_checker" value="no" onchange="toggleSpellCheckerQuestions(false)"> No
+                        </label>
+                    </div>
+                </div>
+
+                <div class="survey-question" id="spellCheckerSubQuestions" style="display: none;">
+                    <label><strong>4-1. Which spell-checking tools do you use? (Select all that apply)</strong></label>
+                    <div style="margin-top: 10px;">
+                        <label class="radio-option" style="display: block; margin-bottom: 8px;">
+                            <input type="checkbox" name="spell_checker_tools" value="microsoft_word"> Microsoft Word Spell Checker
+                        </label>
+                        <label class="radio-option" style="display: block; margin-bottom: 8px;">
+                            <input type="checkbox" name="spell_checker_tools" value="google_docs"> Google Docs Spell Checker
+                        </label>
+                        <label class="radio-option" style="display: block; margin-bottom: 8px;">
+                            <input type="checkbox" name="spell_checker_tools" value="grammarly"> Grammarly
+                        </label>
+                        <label class="radio-option" style="display: block; margin-bottom: 8px;">
+                            <input type="checkbox" name="spell_checker_tools" value="browser_spell_checker"> Built-in browser spell checker (e.g., Chrome, Firefox)
+                        </label>
+                        <label class="radio-option" style="display: block; margin-bottom: 8px;">
+                            <input type="checkbox" name="spell_checker_tools" value="mobile_autocorrect"> Mobile keyboard autocorrect (e.g., Gboard, iOS)
+                        </label>
+                        <label class="radio-option" style="display: block; margin-bottom: 8px;">
+                            <input type="checkbox" name="spell_checker_tools" value="other" onchange="toggleOtherInput(this)"> Other:
+                            <input type="text" id="otherSpellChecker" placeholder="Please specify..." style="margin-left: 10px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; width: 200px;" disabled>
+                        </label>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <label><strong>4-2. Does using a spell checker help you avoid making the same mistakes in the future?</strong></label>
+                        <div class="radio-group" style="margin-top: 10px;">
+                            <label class="radio-option">
+                                <input type="radio" name="spell_checker_helpful" value="very_helpful"> Very helpful
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="spell_checker_helpful" value="helpful"> Helpful
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="spell_checker_helpful" value="neutral"> Neutral
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="spell_checker_helpful" value="not_very_helpful"> Not very helpful
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="spell_checker_helpful" value="not_helpful_at_all"> Not helpful at all
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="survey-question">
+                    <label><strong>5. After Phase 1, there was a stage to confirm your mistakes. Did you proofread your writing at that stage?</strong></label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="proofreading" value="carefully_proofread"> Yes, I carefully proofread and checked the corrections.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="proofreading" value="briefly_looked"> Yes, I briefly looked at the mistakes.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="proofreading" value="skipped"> No, I skipped the proofreading stage.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="proofreading" value="dont_remember"> I don't remember.
+                        </label>
+                    </div>
+                </div>
+
+                <div class="survey-question">
+                    <label><strong>6. For the mistakes pointed out in Phase 1, did you improve on them in Phase 2?</strong></label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="improvement" value="corrected_most"> Yes, I corrected most or all of them.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="improvement" value="corrected_some"> I corrected some of them.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="improvement" value="tried_but_failed"> I tried, but I still made the same mistakes.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="improvement" value="didnt_try"> I didn't try to improve them.
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="improvement" value="dont_remember"> I don't remember.
+                        </label>
+                    </div>
                 </div>
 
                 <div class="button-group">
@@ -717,116 +668,460 @@
             </div>
         </div>
 
-        <!-- Completion Stage -->
+        <!-- Stage 5: Completion -->
         <div class="stage" id="stage5">
             <div class="completion-message">
                 <h2>🎉 Experiment Complete!</h2>
-                <p>100 questions completed with strict answer matching!</p>
+                <p>Thank you for participating in our experiment!</p>
                 <div id="finalResults"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // System configuration
-        const SYSTEM_CONFIG = {
-            strictMatching: true,        // ✅ 厳格な答え判定：正確一致のみ正解
-            autoPlayCountdown: 3,        // ✅ 自動再生機能：3秒カウントダウン
-            spellCheckEnabled: true,     // ✅ スペルチェック：赤い波線で間違い表示
-            totalRounds: 2,              // ✅ 2ラウンド制
-            questionsPerRound: 50        // ✅ 50問 × 2 = 100問総計
-        };
+        // ============ Firebase配置 ============
+                 const firebaseConfig = {
+                apiKey: "AIzaSyDqo6mGblUWNrzEkigIyt9YaSXJS2zpxsg",
+               authDomain: "audio-listening-experime-257b2.firebaseapp.com",
+               projectId: "audio-listening-experime-257b2",
+                storageBucket: "audio-listening-experime-257b2.firebasestorage.app",
+               messagingSenderId: "489014203991",
+               appId: "1:489014203991:web:2fe3ceb5939da84c75f512",
+               measurementId: "G-3NKKYXHS0X"
+                 };
 
-        // Experiment data storage
+
+        // 检查Firebase配置是否已更新
+        function checkFirebaseConfig() {
+            const isConfigured = !firebaseConfig.apiKey.includes('请替换');
+            const statusElement = document.getElementById('firebaseStatus');
+            
+            if (!isConfigured) {
+                statusElement.textContent = '❌ Please configure Firebase information first';
+                statusElement.className = 'firebase-status';
+                console.error('🔥 Firebase配置未完成！请按照指南配置Firebase信息。');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Firebase初始化
+        let db = null;
+        let firebaseInitialized = false;
+
+        async function initializeFirebase() {
+            if (!checkFirebaseConfig()) {
+                return false;
+            }
+
+            try {
+                document.getElementById('firebaseStatus').textContent = '🔄 Connecting to Firebase...';
+                document.getElementById('firebaseStatus').className = 'firebase-status connecting';
+                
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                
+                // 测试连接
+                await db.collection('test').get();
+                
+                document.getElementById('firebaseStatus').textContent = '✅ Firebase Connected';
+                document.getElementById('firebaseStatus').className = 'firebase-status connected';
+                
+                firebaseInitialized = true;
+                console.log('🔥 Firebase初始化成功！');
+                return true;
+            } catch (error) {
+                document.getElementById('firebaseStatus').textContent = '❌ Firebase Connection Failed';
+                document.getElementById('firebaseStatus').className = 'firebase-status';
+                console.error('❌ Firebase初始化失败:', error);
+                return false;
+            }
+        }
+
+        // ============ 全局变量 ============
+        const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        let currentPhase = 'phase1';
+        let isReviewPhase = false;
+        let mouseClickData = [];
+        
+        // 新增：播放按钮点击计数
+        let playButtonClickCounts = {
+            phase1: {}, // 按问题索引记录点击次数 {0: 3, 1: 2, ...}
+            phase2: {}
+        };
+        let currentQuestionPlayCount = 0; // 当前问题的播放次数
+        
+        // 原有实验数据结构
         let experimentData = {
             participantId: 'P' + Date.now(),
-            version: '8.0',
-            systemConfig: SYSTEM_CONFIG,
+            prolificPID: null,
             round1Answers: [],
             round2Answers: [],
-            surveyResponses: {},
-            timestamps: {
-                start: Date.now(),
-                round1Complete: null,
-                round2Complete: null,
-                experimentComplete: null
-            },
+            reviewPhaseClicks: [],
             spellCheckClicks: 0,
-            autoPlayCount: 0,
-            userAgent: navigator.userAgent,
-            screenResolution: `${screen.width}x${screen.height}`,
-            language: navigator.language
+            timestamps: { start: Date.now() },
+            // 新增：播放按钮统计数据
+            playButtonStats: {
+                phase1TotalClicks: 0,
+                phase2TotalClicks: 0,
+                phase1DetailedClicks: {},
+                phase2DetailedClicks: {},
+                averageClicksPerQuestion: 0
+            }
         };
 
-        // Audio questions - All 50 questions
+        // 50个问题数据
         const audioQuestions = [
-            { sentence: "The government has ____ that the new tax policy has been a disaster", answer: "conceded", difficulty: "hard", category: "politics" },
-            { sentence: "He's got a lot of ____ degrees and awards from educational establishments worldwide", answer: "honorary", difficulty: "medium", category: "education" },
-            { sentence: "As people ____ more wealth, they tend to spend a greater proportion of their incomes", answer: "accumulate", difficulty: "medium", category: "economics" },
-            { sentence: "Plant growth is most ____ in spring and early summer", answer: "noticeable", difficulty: "medium", category: "nature" },
-            { sentence: "The ____ is to perform its last ever concert tomorrow night at the Albert Hall", answer: "orchestra", difficulty: "medium", category: "music" },
-            { sentence: "Public ____ about the disease is still a cause for concern", answer: "ignorance", difficulty: "medium", category: "health" },
-            { sentence: "The president does not want to answer any ____ questions", answer: "theoretical", difficulty: "hard", category: "politics" },
-            { sentence: "Education should be ____ to the child's needs", answer: "relevant", difficulty: "medium", category: "education" },
-            { sentence: "His father is buried in the ____ on the hill", answer: "cemetery", difficulty: "easy", category: "places" },
-            { sentence: "Although the play was written hundreds of years ago, it still has a ____ feel to it", answer: "contemporary", difficulty: "hard", category: "arts" },
-            { sentence: "He is blessed with both good looks and ____", answer: "intelligence", difficulty: "medium", category: "personal" },
-            { sentence: "He was brought up on a diet of political ____ from birth", answer: "propaganda", difficulty: "hard", category: "politics" },
-            { sentence: "This recipe should be ____ for five people", answer: "sufficient", difficulty: "medium", category: "cooking" },
-            { sentence: "Young people don't always appreciate the ____ offered by their parents and teachers", answer: "guidance", difficulty: "medium", category: "education" },
-            { sentence: "Not making a will can have serious ____ for your children and other family members", answer: "consequences", difficulty: "medium", category: "legal" },
-            { sentence: "The country is run on socialist ____", answer: "principles", difficulty: "hard", category: "politics" },
-            { sentence: "Any help you could give me would be greatly ____", answer: "appreciated", difficulty: "easy", category: "courtesy" },
-            { sentence: "He was arrested for taking part in ____ activities", answer: "revolutionary", difficulty: "hard", category: "politics" },
-            { sentence: "I think it helps if you have an ____ personality", answer: "extroverted", difficulty: "medium", category: "personality" },
-            { sentence: "With the extra resources, the project now seems ____", answer: "feasible", difficulty: "hard", category: "business" },
-            { sentence: "That party was too ____ for me!", answer: "bizarre", difficulty: "medium", category: "description" },
-            { sentence: "The finance ____ controls the school's budget", answer: "committee", difficulty: "medium", category: "organization" },
-            { sentence: "I like the ____ of living close to work", answer: "convenience", difficulty: "easy", category: "lifestyle" },
-            { sentence: "It was when we started living together that we found we just weren't ____", answer: "compatible", difficulty: "medium", category: "relationships" },
-            { sentence: "He told one or two ____ stories about his years as a policeman", answer: "humorous", difficulty: "medium", category: "personality" },
-            { sentence: "We really ought to leave ____", answer: "immediately", difficulty: "medium", category: "time" },
-            { sentence: "An ____ inquiry will determine whether the case should move forward", answer: "independent", difficulty: "medium", category: "legal" },
-            { sentence: "He decided to ____ a career in television", answer: "pursue", difficulty: "medium", category: "career" },
-            { sentence: "She has shown herself to be a highly ____ manager", answer: "competent", difficulty: "medium", category: "work" },
-            { sentence: "The children have no ____ of being different", answer: "consciousness", difficulty: "hard", category: "psychology" },
-            { sentence: "An old ____ for 2012 was still hanging on the wall of her office", answer: "calendar", difficulty: "easy", category: "office" },
-            { sentence: "The general ____ in the office is that he can't do his job", answer: "consensus", difficulty: "hard", category: "opinion" },
-            { sentence: "The sun ____ behind heavy clouds", answer: "disappeared", difficulty: "easy", category: "weather" },
-            { sentence: "I'm sorry to ____ you, but I'm afraid I can't come after all", answer: "disappoint", difficulty: "medium", category: "emotions" },
-            { sentence: "Such a war would be ____ for the country", answer: "disastrous", difficulty: "medium", category: "consequences" },
-            { sentence: "Some monkeys have a very complex social ____", answer: "hierarchy", difficulty: "hard", category: "social" },
-            { sentence: "We met on several ____ to discuss the issue", answer: "occasions", difficulty: "medium", category: "time" },
-            { sentence: "I had the ____ of interviewing Picasso in the 1960s", answer: "privilege", difficulty: "medium", category: "opportunity" },
-            { sentence: "Store fruit juice in the ____", answer: "refrigerator", difficulty: "easy", category: "household" },
-            { sentence: "I didn't want to ____ her in front of her friends", answer: "embarrass", difficulty: "medium", category: "emotions" },
-            { sentence: "The art department and the music department are in two ____ buildings", answer: "separate", difficulty: "easy", category: "location" },
-            { sentence: "She ____ for her husband's rudeness", answer: "apologized", difficulty: "medium", category: "behavior" },
-            { sentence: "I'll be living here for the ____ future", answer: "foreseeable", difficulty: "hard", category: "time" },
-            { sentence: "She gave me one of those ____ smiles and I just had to agree", answer: "irresistible", difficulty: "hard", category: "description" },
-            { sentence: "Imagine what the world will be like at the end of the next ____", answer: "millennium", difficulty: "hard", category: "time" },
-            { sentence: "There are two different ____ of this word", answer: "pronunciations", difficulty: "medium", category: "language" },
-            { sentence: "Visitors to the country have been asked to fill out a detailed ____", answer: "questionnaire", difficulty: "medium", category: "documentation" },
-            { sentence: "He ____ said he'd be here", answer: "definitely", difficulty: "medium", category: "certainty" },
-            { sentence: "Death was an everyday ____ during the Civil War", answer: "occurrence", difficulty: "medium", category: "events" }
+            { sentence: "The government has ____ that the new tax policy has been a disaster.", answer: "conceded", audio: "audio/concede.mp3" },
+            { sentence: "He's got a lot of ____ degrees and awards from educational establishments worldwide.", answer: "honorary", audio: "audio/honorary.mp3" },
+            { sentence: "As people ____ more wealth, they tend to spend a greater proportion of their incomes.", answer: "accumulate", audio: "audio/accumulate.mp3" },
+            { sentence: "Plant growth is most ____ in spring and early summer.", answer: "noticeable", audio: "audio/noticeable.mp3" },
+            { sentence: "The ____ is to perform its last ever concert tomorrow night at the Albert Hall.", answer: "orchestra", audio: "audio/orchestra.mp3" },
+            { sentence: "Public ____ about the disease is still a cause for concern.", answer: "ignorance", audio: "audio/ignorance.mp3" },
+            { sentence: "The president does not want to answer any ____ questions.", answer: "theoretical", audio: "audio/theoretical.mp3" },
+            { sentence: "Education should be ____ to the child's needs.", answer: "relevant", audio: "audio/relevant.mp3" },
+            { sentence: "His father is buried in the ____ on the hill.", answer: "cemetery", audio: "audio/cemetery.mp3" },
+            { sentence: "Although the play was written hundreds of years ago, it still has a ____ feel to it.", answer: "contemporary", audio: "audio/contemporary.mp3" },
+            { sentence: "He is blessed with both good looks and ____.", answer: "intelligence", audio: "audio/intelligence.mp3" },
+            { sentence: "He was brought up on a diet of political ____ from birth.", answer: "propaganda", audio: "audio/propaganda.mp3" },
+            { sentence: "This recipe should be ____ for five people.", answer: "sufficient", audio: "audio/sufficient.mp3" },
+            { sentence: "Young people don't always appreciate the ____ offered by their parents and teachers.", answer: "guidance", audio: "audio/guidance.mp3" },
+            { sentence: "Not making a will can have serious ____ for your children and other family members.", answer: "consequences", audio: "audio/consequence.mp3" },
+            { sentence: "The country is run on socialist ____.", answer: "principles", audio: "audio/principle.mp3" },
+            { sentence: "Any help you could give me would be greatly ____.", answer: "appreciated", audio: "audio/appreciate.mp3" },
+            { sentence: "He was arrested for taking part in ____ activities.", answer: "revolutionary", audio: "audio/revolutionary.mp3" },
+            { sentence: "I think it helps if you have an ____ personality.", answer: "extroverted", audio: "audio/extrovert.mp3" },
+            { sentence: "With the extra resources, the project now seems ____.", answer: "feasible", audio: "audio/feasible.mp3" },
+            { sentence: "That party was too ____ for me!", answer: "bizarre", audio: "audio/bizarre.mp3" },
+            { sentence: "The finance ____ controls the school's budget.", answer: "committee", audio: "audio/committee.mp3" },
+            { sentence: "I like the ____ of living close to work.", answer: "convenience", audio: "audio/convenience.mp3" },
+            { sentence: "It was when we started living together that we found we just weren't ____.", answer: "compatible", audio: "audio/compatible.mp3" },
+            { sentence: "He told the ____ story of his escape.", answer: "extraordinary", audio: "audio/extraordinary.mp3" },
+            { sentence: "He told one or two ____ stories about his years as a policeman.", answer: "humorous", audio: "audio/humorous.mp3" },
+            { sentence: "We really ought to leave ____.", answer: "immediately", audio: "audio/immediately.mp3" },
+            { sentence: "An ____ inquiry will determine whether the case should move forward.", answer: "independent", audio: "audio/independent.mp3" },
+            { sentence: "He decided to ____ a career in television.", answer: "pursue", audio: "audio/pursue.mp3" },
+            { sentence: "She has shown herself to be a highly ____ manager.", answer: "competent", audio: "audio/competent.mp3" },
+            { sentence: "The children have no ____ of being different.", answer: "consciousness", audio: "audio/consciousness.mp3" },
+            { sentence: "An old ____ for 2012 was still hanging on the wall of her office.", answer: "calendar", audio: "audio/calendar.mp3" },
+            { sentence: "The general ____ in the office is that he can't do his job.", answer: "consensus", audio: "audio/consensus.mp3" },
+            { sentence: "The sun ____ behind heavy clouds.", answer: "disappeared", audio: "audio/disappear.mp3" },
+            { sentence: "I'm sorry to ____ you, but I'm afraid I can't come after all.", answer: "disappoint", audio: "audio/disappoint.mp3" },
+            { sentence: "Such a war would be ____ for the country.", answer: "disastrous", audio: "audio/disastrous.mp3" },
+            { sentence: "Some monkeys have a very complex social ____.", answer: "hierarchy", audio: "audio/hierarchy.mp3" },
+            { sentence: "We met on several ____ to discuss the issue.", answer: "occasions", audio: "audio/occasion.mp3" },
+            { sentence: "I had the ____ of interviewing Picasso in the 1960s.", answer: "privilege", audio: "audio/privilege.mp3" },
+            { sentence: "Store fruit juice in the ____.", answer: "refrigerator", audio: "audio/refrigerator.mp3" },
+            { sentence: "I didn't want to ____ her in front of her friends.", answer: "embarrass", audio: "audio/embarrass.mp3" },
+            { sentence: "The art department and the music department are in two ____ buildings.", answer: "separate", audio: "audio/separate.mp3" },
+            { sentence: "She ____ for her husband's rudeness.", answer: "apologized", audio: "audio/apologize.mp3" },
+            { sentence: "I'll be living here for the ____ future.", answer: "foreseeable", audio: "audio/foreseeable.mp3" },
+            { sentence: "She gave me one of those ____ smiles and I just had to agree.", answer: "irresistible", audio: "audio/irresistible.mp3" },
+            { sentence: "Imagine what the world will be like at the end of the next ____.", answer: "millennium", audio: "audio/millennium.mp3" },
+            { sentence: "There are two different ____ of this word.", answer: "pronunciations", audio: "audio/pronunciation.mp3" },
+            { sentence: "Visitors to the country have been asked to fill out a detailed ____.", answer: "questionnaire", audio: "audio/questionnaire.mp3" },
+            { sentence: "He ____ said he'd be here.", answer: "definitely", audio: "audio/definitely.mp3" },
+            { sentence: "Death was an everyday ____ during the Civil War.", answer: "occurrence", audio: "audio/occurrence.mp3" }
         ];
 
-        // Current question tracking
         let currentQuestionIndex = 0;
-        let currentRound = 1;
         let countdownTimer = null;
-        let autoPlayTimer = null;
+        let currentAudio = null;
 
-        // ✅ 厳格な答え判定：正確一致のみ正解
-        function strictAnswerCheck(userAnswer, correctAnswer) {
-            if (!SYSTEM_CONFIG.strictMatching) {
-                return userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+        // ============ 新增功能：播放按钮点击统计 (后台记录，不显示) ============
+        function incrementPlayCount(phase) {
+            currentQuestionPlayCount++;
+            
+            // 后台记录数据，不更新界面显示
+            if (phase === 'phase1') {
+                playButtonClickCounts.phase1[currentQuestionIndex] = currentQuestionPlayCount;
+                experimentData.playButtonStats.phase1TotalClicks++;
+                experimentData.playButtonStats.phase1DetailedClicks[currentQuestionIndex] = currentQuestionPlayCount;
+            } else if (phase === 'phase2') {
+                playButtonClickCounts.phase2[currentQuestionIndex] = currentQuestionPlayCount;
+                experimentData.playButtonStats.phase2TotalClicks++;
+                experimentData.playButtonStats.phase2DetailedClicks[currentQuestionIndex] = currentQuestionPlayCount;
             }
-            // 厳格判定: 大文字小文字、スペース、句読点まで完全一致
+            
+            console.log(`📊 播放统计 - ${phase} 问题${currentQuestionIndex + 1}: ${currentQuestionPlayCount}次播放 (后台记录)`);
+        }
+
+        function resetPlayCount() {
+            currentQuestionPlayCount = 0;
+            // 不需要隐藏界面元素，因为界面不显示播放次数
+        }
+
+        // ============ 新增功能：保持输入框焦点 ============
+        function maintainInputFocus() {
+            // 在点击播放按钮后，延迟一小段时间再重新聚焦到输入框
+            setTimeout(() => {
+                const activeStage = document.querySelector('.stage.active');
+                if (activeStage) {
+                    let inputElement = null;
+                    if (activeStage.id === 'stage1') {
+                        inputElement = document.getElementById('answerInput');
+                    } else if (activeStage.id === 'stage3') {
+                        inputElement = document.getElementById('answerInput2');
+                    }
+                    
+                    if (inputElement) {
+                        inputElement.focus();
+                        // 确保光标在输入框末尾
+                        const length = inputElement.value.length;
+                        inputElement.setSelectionRange(length, length);
+                    }
+                }
+            }, 100);
+        }
+
+        // ============ Firebase数据记录函数 ============
+        async function initializeExperiment() {
+            if (!firebaseInitialized) {
+                console.log('⚠️ Firebase未初始化，跳过数据记录');
+                return;
+            }
+
+            try {
+                // 使用用户输入的Prolific ID
+                const prolificId = experimentData.prolificPID || 'manual_input_' + Date.now();
+                
+                await db.collection('audio_experiment_sessions').doc(sessionId).set({
+                    participantId: experimentData.participantId,
+                    prolificId: prolificId,
+                    startTime: firebase.firestore.Timestamp.now(),
+                    userAgent: navigator.userAgent,
+                    screenResolution: `${screen.width}x${screen.height}`,
+                    windowSize: `${window.innerWidth}x${window.innerHeight}`,
+                    phase1_completed: false,
+                    phase2_completed: false,
+                    experiment_completed: false,
+                    created_at: firebase.firestore.Timestamp.now()
+                });
+                
+                console.log('🔥 实验会话已创建, Session ID:', sessionId);
+            } catch (error) {
+                console.error('❌ 创建实验会话失败:', error);
+            }
+        }
+
+        async function recordPhase1Answer(questionNumber, audioFile, userAnswer, correctAnswer, responseTime, playCount) {
+            if (!firebaseInitialized) return;
+            
+            try {
+                const answerData = {
+                    sessionId: sessionId,
+                    phase: 'phase1',
+                    questionNumber: questionNumber,
+                    audioFile: audioFile,
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAnswer,
+                    isCorrect: userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim(),
+                    responseTime: responseTime,
+                    playButtonClicks: playCount, // 新增：播放次数
+                    timestamp: firebase.firestore.Timestamp.now()
+                };
+                
+                await db.collection('phase1_answers').add(answerData);
+                console.log(`📝 阶段1 问题${questionNumber} 已记录 (播放${playCount}次)`);
+                
+                if (questionNumber === 50) {
+                    await db.collection('audio_experiment_sessions').doc(sessionId).update({
+                        phase1_completed: true,
+                        phase1_completion_time: firebase.firestore.Timestamp.now()
+                    });
+                }
+            } catch (error) {
+                console.error('❌ 记录阶段1答案失败:', error);
+            }
+        }
+
+        async function recordPhase2Answer(questionNumber, audioFile, userAnswer, correctAnswer, responseTime, playCount) {
+            if (!firebaseInitialized) return;
+            
+            try {
+                const answerData = {
+                    sessionId: sessionId,
+                    phase: 'phase2',
+                    questionNumber: questionNumber + 50, // 51-100
+                    audioFile: audioFile,
+                    userAnswer: userAnswer,
+                    correctAnswer: correctAnswer,
+                    isCorrect: userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim(),
+                    responseTime: responseTime,
+                    playButtonClicks: playCount, // 新增：播放次数
+                    timestamp: firebase.firestore.Timestamp.now()
+                };
+                
+                await db.collection('phase2_answers').add(answerData);
+                console.log(`📝 阶段2 问题${questionNumber + 50} 已记录 (播放${playCount}次)`);
+                
+                if (questionNumber === 49) { // 第二轮的第50题
+                    await db.collection('audio_experiment_sessions').doc(sessionId).update({
+                        phase2_completed: true,
+                        phase2_completion_time: firebase.firestore.Timestamp.now(),
+                        experiment_completed: true,
+                        total_completion_time: firebase.firestore.Timestamp.now()
+                    });
+                }
+            } catch (error) {
+                console.error('❌ 记录阶段2答案失败:', error);
+            }
+        }
+
+        // 新增：记录播放按钮统计数据
+        async function recordPlayButtonStats() {
+            if (!firebaseInitialized) return;
+            
+            try {
+                const statsData = {
+                    sessionId: sessionId,
+                    phase1TotalClicks: experimentData.playButtonStats.phase1TotalClicks,
+                    phase2TotalClicks: experimentData.playButtonStats.phase2TotalClicks,
+                    totalClicks: experimentData.playButtonStats.phase1TotalClicks + experimentData.playButtonStats.phase2TotalClicks,
+                    phase1DetailedClicks: experimentData.playButtonStats.phase1DetailedClicks,
+                    phase2DetailedClicks: experimentData.playButtonStats.phase2DetailedClicks,
+                    averageClicksPerQuestion: (experimentData.playButtonStats.phase1TotalClicks + experimentData.playButtonStats.phase2TotalClicks) / 100,
+                    timestamp: firebase.firestore.Timestamp.now()
+                };
+                
+                await db.collection('play_button_statistics').add(statsData);
+                console.log('📊 播放按钮统计数据已保存');
+            } catch (error) {
+                console.error('❌ 保存播放按钮统计数据失败:', error);
+            }
+        }
+
+        // ============ 鼠标追踪函数 (只在Review阶段，简化数据) ============
+        function startMouseTracking() {
+            isReviewPhase = true;
+            mouseClickData = [];
+            console.log('🖱️ 开始追踪Review阶段鼠标点击');
+            
+            document.addEventListener('click', recordMouseClick);
+        }
+
+        function recordMouseClick(event) {
+            if (!isReviewPhase) return;
+            
+            // 简化的点击数据 - 只记录内容和时间
+            const clickData = {
+                type: 'click',
+                timestamp: new Date().toLocaleString('zh-CN'),
+                clickedText: event.target.textContent?.substring(0, 100) || '',
+                elementType: event.target.tagName || '',
+                elementClass: event.target.className || '',
+                isSpellCheck: event.target.className?.includes('spell-error-text') || false,
+                isButton: event.target.tagName === 'BUTTON',
+                questionNumber: null // 默认为null，后面会根据情况设置
+            };
+            
+            // 如果是拼写检查点击，尝试获取对应的问题号码
+            if (clickData.isSpellCheck) {
+                // 查找包含此元素的问题段落
+                let parentElement = event.target.parentElement;
+                while (parentElement) {
+                    const textContent = parentElement.textContent;
+                    // 查找类似 "1. " 的问题编号模式
+                    const questionMatch = textContent.match(/^(\d+)\.\s/);
+                    if (questionMatch) {
+                        clickData.questionNumber = parseInt(questionMatch[1]);
+                        break;
+                    }
+                    parentElement = parentElement.parentElement;
+                }
+            }
+            
+            mouseClickData.push(clickData);
+            experimentData.reviewPhaseClicks.push(clickData);
+            console.log('🖱️ Review点击记录:', clickData);
+        }
+
+        // 移除滚动和按键追踪
+        function recordScrollEvent(event) {
+            // 不再记录滚动事件
+        }
+
+        function recordKeyPress(event) {
+            // 不再记录按键事件
+        }
+
+        async function saveMouseTrackingData() {
+            if (!firebaseInitialized || mouseClickData.length === 0) return;
+            
+            try {
+                const trackingData = {
+                    sessionId: sessionId,
+                    phase: 'review_page',
+                    totalClicks: mouseClickData.length,
+                    spellCheckClicks: mouseClickData.filter(d => d.isSpellCheck).length,
+                    buttonClicks: mouseClickData.filter(d => d.isButton).length,
+                    clickDetails: mouseClickData, // 简化的点击数据
+                    timestamp: firebase.firestore.Timestamp.now()
+                };
+                
+                await db.collection('confirmation_page_interactions').add(trackingData);
+                console.log('🖱️ Review阶段交互数据已保存');
+                
+                // 清理事件监听器
+                document.removeEventListener('click', recordMouseClick);
+                
+                isReviewPhase = false;
+                mouseClickData = [];
+            } catch (error) {
+                console.error('❌ 保存鼠标追踪数据失败:', error);
+            }
+        }
+
+        // ============ 欢迎页面和实验开始 ============
+        function startExperiment() {
+            const prolificId = document.getElementById('prolificIdInput').value.trim();
+            
+            if (!prolificId) {
+                document.getElementById('welcomeErrorMessage').style.display = 'block';
+                document.getElementById('prolificIdInput').focus();
+                return;
+            }
+            
+            // 保存Prolific ID
+            experimentData.prolificPID = prolificId;
+            
+            // 切换到第一阶段
+            document.getElementById('welcomeStage').classList.remove('active');
+            document.getElementById('stage1').classList.add('active');
+            
+            // 更新进度显示
+            document.getElementById('progressText').textContent = 'Question 1 / 50';
+            
+            // 初始化第一个问题
+            setTimeout(() => {
+                initializeQuestion();
+            }, 500);
+        }
+        // 初始化Prolific数据 - 修改为从输入框获取
+        function initializeProlificData() {
+            // Prolific ID现在从用户输入获取，不再从URL参数获取
+            const prolificId = experimentData.prolificPID || 'MANUAL_INPUT';
+            console.log('Prolific ID设置为:', prolificId);
+        }
+
+        function trackReviewClick(type, data) {
+            experimentData.reviewPhaseClicks.push({
+                type: type,
+                data: data,
+                timestamp: Date.now(),
+                coordinates: { x: event.clientX, y: event.clientY }
+            });
+        }
+
+        function sendDataToServer(type, data) {
+            console.log('📤 Sending data:', type, data);
+        }
+
+        function strictAnswerCheck(userAnswer, correctAnswer) {
             return userAnswer.trim() === correctAnswer.trim();
         }
 
-        // Calculate accuracy for display
         function calculateAccuracy(answers) {
             if (answers.length === 0) return 0;
             const correct = answers.filter(answer => 
@@ -835,29 +1130,16 @@
             return Math.round((correct / answers.length) * 100);
         }
 
-        // Update accuracy indicator
-        function updateAccuracyDisplay(accuracy, elementId) {
-            const element = document.getElementById(elementId);
-            if (element) {
-                element.textContent = `Accuracy: ${accuracy}%`;
-                element.className = 'accuracy-indicator ' + 
-                    (accuracy >= 80 ? 'good' : accuracy >= 60 ? 'average' : 'poor');
-            }
-        }
-
-        // ✅ 自動再生機能：1秒カウントダウン
-        function startCountdown(buttonId, countdownId, callback) {
+        function startCountdown(buttonId, countdownId) {
             const button = document.getElementById(buttonId);
             const countdownElement = document.getElementById(countdownId);
             
             if (!button || !countdownElement) return;
             
-            let timeLeft = SYSTEM_CONFIG.autoPlayCountdown;
+            let timeLeft = 1;
             countdownElement.textContent = timeLeft;
             
-            // Clear any existing timers
             if (countdownTimer) clearInterval(countdownTimer);
-            if (autoPlayTimer) clearTimeout(autoPlayTimer);
             
             countdownTimer = setInterval(() => {
                 timeLeft--;
@@ -865,256 +1147,339 @@
                 
                 if (timeLeft <= 0) {
                     clearInterval(countdownTimer);
-                    button.innerHTML = '<span class="countdown-circle"></span>Playing Audio...';
-                    button.disabled = true;
-                    
-                    // Auto-play audio after countdown
-                    autoPlayTimer = setTimeout(() => {
-                        button.textContent = '🔊 Play Again';
-                        button.disabled = false;
-                        experimentData.autoPlayCount++;
-                        if (callback) callback();
-                    }, 2500);
+                    playRealAudio(buttonId);
                 }
             }, 1000);
         }
 
-        // Initialize first question (Round 1)
+        // 页面跳转后自动开始倒计时和音频播放
+        function autoStartAudio() {
+            setTimeout(() => {
+                const activeStage = document.querySelector('.stage.active');
+                if (!activeStage) return;
+                
+                if (activeStage.id === 'stage1') {
+                    startCountdown('playButton', 'countdown');
+                } else if (activeStage.id === 'stage3') {
+                    startCountdown('playButton2', 'countdown2');
+                }
+            }, 500); // 增加延迟确保页面完全加载
+        }
+
+        // 强制自动播放 - 修复所有页面的音频播放
+        function forceAutoPlay() {
+            const activeStage = document.querySelector('.stage.active');
+            if (!activeStage) return;
+            
+            let buttonId, countdownId;
+            if (activeStage.id === 'stage1') {
+                buttonId = 'playButton';
+                countdownId = 'countdown';
+            } else if (activeStage.id === 'stage3') {
+                buttonId = 'playButton2';
+                countdownId = 'countdown2';
+            } else {
+                return;
+            }
+            
+            const button = document.getElementById(buttonId);
+            const countdownElement = document.getElementById(countdownId);
+            
+            if (!button || !countdownElement) return;
+            
+            // 清除现有计时器
+            if (countdownTimer) clearInterval(countdownTimer);
+            
+            // 重置按钮状态
+            button.disabled = false;
+            
+            // 立即开始倒计时
+            let timeLeft = 1;
+            countdownElement.textContent = timeLeft;
+            button.textContent = `🔊 Auto-play in ${timeLeft}s`;
+            
+            countdownTimer = setInterval(() => {
+                timeLeft--;
+                countdownElement.textContent = timeLeft;
+                button.textContent = `🔊 Auto-play in ${timeLeft}s`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdownTimer);
+                    // 确保音频能够播放
+                    setTimeout(() => {
+                        playRealAudio(buttonId);
+                    }, 100);
+                }
+            }, 1000);
+        }
+
+        function playRealAudio(buttonId) {
+            const button = document.getElementById(buttonId);
+            const question = audioQuestions[currentQuestionIndex];
+            
+            // 记录播放次数
+            const currentPhase = (buttonId === 'playButton') ? 'phase1' : 'phase2';
+            incrementPlayCount(currentPhase);
+            
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+            
+            button.textContent = '🔊 Playing Audio...';
+            button.disabled = true;
+            
+            currentAudio = new Audio(question.audio);
+            currentAudio.preload = 'auto';
+            currentAudio.volume = 0.8;
+            
+            currentAudio.addEventListener('loadeddata', () => {
+                const playPromise = currentAudio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('Audio playing successfully');
+                    }).catch(error => {
+                        console.log('Autoplay blocked, user interaction required:', error);
+                        button.textContent = '🔊 Click to Play Audio';
+                        button.disabled = false;
+                        
+                        button.onclick = function() {
+                            currentAudio.play();
+                            button.textContent = '🔊 Playing Audio...';
+                            button.disabled = true;
+                        };
+                    });
+                }
+            });
+            
+            currentAudio.addEventListener('ended', () => {
+                button.textContent = '🔊 Play Again';
+                button.disabled = false;
+                
+                if (buttonId === 'playButton') {
+                    button.onclick = playAudio;
+                } else {
+                    button.onclick = playAudio2;
+                }
+                
+                // 保持输入框焦点
+                maintainInputFocus();
+            });
+            
+            currentAudio.addEventListener('error', (e) => {
+                console.error('Audio loading error:', e);
+                button.textContent = '🔊 Audio Error - Click to Retry';
+                button.disabled = false;
+                
+                button.onclick = function() {
+                    playRealAudio(buttonId);
+                };
+            });
+            
+            // 在音频开始播放后立即恢复输入框焦点
+            setTimeout(() => {
+                maintainInputFocus();
+            }, 200);
+        }
+
         function initializeQuestion() {
             if (currentQuestionIndex < audioQuestions.length) {
                 const question = audioQuestions[currentQuestionIndex];
                 const sentenceWithBlank = question.sentence.replace('____', 
-                    '<input type="text" class="input-field" id="answerInput" placeholder="____" autocomplete="off" spellcheck="false">');
+                    '<input type="text" class="input-field" id="answerInput" placeholder="____" autocomplete="off">');
                 
                 document.getElementById('sentenceDisplay').innerHTML = sentenceWithBlank;
-                document.getElementById('questionNumber').innerHTML = 
-                    `Question ${currentQuestionIndex + 1} / ${audioQuestions.length} <span class="round-indicator">Round 1</span>`;
+                document.getElementById('questionNumber').textContent = 
+                    `Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
                 
-                // Update progress (0-50%)
                 const progress = (currentQuestionIndex / audioQuestions.length) * 50;
                 document.getElementById('progressFill').style.width = progress + '%';
                 document.getElementById('progressText').textContent = 
-                    `Round 1: Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
+                    `Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
                 
-                // Update accuracy display
-                const accuracy = calculateAccuracy(experimentData.round1Answers);
-                document.getElementById('accuracyDisplay').textContent = `Accuracy: ${accuracy}%`;
-                updateAccuracyDisplay(accuracy, 'accuracyIndicator');
-                
-                // Clear error message
                 document.getElementById('errorMessage').style.display = 'none';
                 
-                // Start auto-play countdown
-                startCountdown('playButton', 'countdown', () => {
-                    const input = document.getElementById('answerInput');
-                    if (input) input.focus();
-                });
+                // 重置播放计数
+                resetPlayCount();
                 
-                // Focus on input after delay
+                // 重置播放按钮
+                const button = document.getElementById('playButton');
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = '🔊 Auto-play in 1s';
+                }
+                
+                // 自动聚焦到输入框
                 setTimeout(() => {
                     const input = document.getElementById('answerInput');
                     if (input) input.focus();
                 }, 100);
+                
+                // 强制自动播放音频 - 增加延迟确保成功
+                setTimeout(() => {
+                    forceAutoPlay();
+                }, 1000);
             }
         }
 
-        // Initialize second round question
         function initializeQuestion2() {
             if (currentQuestionIndex < audioQuestions.length) {
                 const question = audioQuestions[currentQuestionIndex];
                 const sentenceWithBlank = question.sentence.replace('____', 
-                    '<input type="text" class="input-field" id="answerInput2" placeholder="____" autocomplete="off" spellcheck="false">');
+                    '<input type="text" class="input-field" id="answerInput2" placeholder="____" autocomplete="off">');
                 
                 document.getElementById('sentenceDisplay2').innerHTML = sentenceWithBlank;
-                document.getElementById('questionNumber2').innerHTML = 
-                    `Question ${currentQuestionIndex + 1} / ${audioQuestions.length} <span class="round-indicator" style="background: linear-gradient(45deg, #dc3545, #e74c3c);">Round 2</span>`;
+                document.getElementById('questionNumber2').textContent = 
+                    `Question ${currentQuestionIndex + 51} / 100`;
                 
-                // Update progress (50-100%)
                 const progress = 50 + (currentQuestionIndex / audioQuestions.length) * 50;
                 document.getElementById('progressFill').style.width = progress + '%';
                 document.getElementById('progressText').textContent = 
-                    `Round 2: Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
+                    `Question ${currentQuestionIndex + 51} / 100`;
                 
-                // Update accuracy display
-                const accuracy = calculateAccuracy(experimentData.round2Answers);
-                updateAccuracyDisplay(accuracy, 'accuracyIndicator2');
-                
-                // Clear error message
                 document.getElementById('errorMessage2').style.display = 'none';
                 
-                // Start auto-play countdown
-                startCountdown('playButton2', 'countdown2', () => {
-                    const input = document.getElementById('answerInput2');
-                    if (input) input.focus();
-                });
+                // 重置播放计数
+                resetPlayCount();
                 
-                // Focus on input after delay
+                // 重置播放按钮
+                const button = document.getElementById('playButton2');
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = '🔊 Auto-play in 1s';
+                }
+                
+                // 自动聚焦到输入框
                 setTimeout(() => {
                     const input = document.getElementById('answerInput2');
                     if (input) input.focus();
                 }, 100);
+                
+                // 强制自动播放音频 - 增加延迟确保成功
+                setTimeout(() => {
+                    forceAutoPlay();
+                }, 1000);
             }
         }
 
-        // Play audio function (Round 1)
         function playAudio() {
-            const button = document.getElementById('playButton');
-            
-            // Clear timers
             if (countdownTimer) clearInterval(countdownTimer);
-            if (autoPlayTimer) clearTimeout(autoPlayTimer);
-            
-            button.innerHTML = '<span class="countdown-circle"></span>Playing Audio...';
-            button.disabled = true;
-            
-            setTimeout(() => {
-                button.textContent = '🔊 Play Again';
-                button.disabled = false;
-                
-                const input = document.getElementById('answerInput');
-                if (input) {
-                    input.placeholder = 'Type the missing word...';
-                    input.focus();
-                }
-            }, 2500);
+            playRealAudio('playButton');
         }
 
-        // Play audio function (Round 2)
         function playAudio2() {
-            const button = document.getElementById('playButton2');
-            
-            // Clear timers
             if (countdownTimer) clearInterval(countdownTimer);
-            if (autoPlayTimer) clearTimeout(autoPlayTimer);
-            
-            button.innerHTML = '<span class="countdown-circle"></span>Playing Audio...';
-            button.disabled = true;
-            
-            setTimeout(() => {
-                button.textContent = '🔊 Play Again';
-                button.disabled = false;
-                
-                const input = document.getElementById('answerInput2');
-                if (input) {
-                    input.placeholder = 'Type the missing word...';
-                    input.focus();
-                }
-            }, 2500);
+            playRealAudio('playButton2');
         }
 
-        // Next question function (Round 1)
         function nextQuestion() {
             const input = document.getElementById('answerInput');
             const answer = input ? input.value.trim() : '';
             
             if (!answer) {
                 document.getElementById('errorMessage').style.display = 'block';
-                if (input) {
-                    input.classList.add('spell-error');
-                    setTimeout(() => input.classList.remove('spell-error'), 500);
-                    input.focus();
-                }
+                if (input) input.focus();
                 return;
             }
             
-            // Clear timers
-            if (countdownTimer) clearInterval(countdownTimer);
-            if (autoPlayTimer) clearTimeout(autoPlayTimer);
-            
-            // Store answer with strict checking
             const correctAnswer = audioQuestions[currentQuestionIndex].answer;
             const isCorrect = strictAnswerCheck(answer, correctAnswer);
+            const responseTime = Date.now() - experimentData.timestamps.start;
+            const playCount = currentQuestionPlayCount;
             
             experimentData.round1Answers.push({
                 questionIndex: currentQuestionIndex,
                 userAnswer: answer,
                 correctAnswer: correctAnswer,
                 isCorrect: isCorrect,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                playCount: playCount // 新增：记录播放次数
             });
+            
+            // Firebase记录
+            recordPhase1Answer(
+                currentQuestionIndex + 1, 
+                audioQuestions[currentQuestionIndex].audio,
+                answer,
+                correctAnswer,
+                responseTime,
+                playCount // 新增：传递播放次数
+            );
             
             currentQuestionIndex++;
             
             if (currentQuestionIndex >= audioQuestions.length) {
-                // Round 1 complete
-                experimentData.timestamps.round1Complete = Date.now();
                 goToStage2();
             } else {
                 initializeQuestion();
             }
         }
 
-        // Next question function (Round 2)
         function nextQuestion2() {
             const input = document.getElementById('answerInput2');
             const answer = input ? input.value.trim() : '';
             
             if (!answer) {
                 document.getElementById('errorMessage2').style.display = 'block';
-                if (input) {
-                    input.classList.add('spell-error');
-                    setTimeout(() => input.classList.remove('spell-error'), 500);
-                    input.focus();
-                }
+                if (input) input.focus();
                 return;
             }
             
-            // Clear timers
-            if (countdownTimer) clearInterval(countdownTimer);
-            if (autoPlayTimer) clearTimeout(autoPlayTimer);
-            
-            // Store answer with strict checking
             const correctAnswer = audioQuestions[currentQuestionIndex].answer;
             const isCorrect = strictAnswerCheck(answer, correctAnswer);
+            const responseTime = Date.now() - experimentData.timestamps.start;
+            const playCount = currentQuestionPlayCount;
             
             experimentData.round2Answers.push({
                 questionIndex: currentQuestionIndex,
                 userAnswer: answer,
                 correctAnswer: correctAnswer,
                 isCorrect: isCorrect,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                playCount: playCount // 新增：记录播放次数
             });
+            
+            // Firebase记录
+            recordPhase2Answer(
+                currentQuestionIndex,
+                audioQuestions[currentQuestionIndex].audio,
+                answer,
+                correctAnswer,
+                responseTime,
+                playCount // 新增：传递播放次数
+            );
             
             currentQuestionIndex++;
             
             if (currentQuestionIndex >= audioQuestions.length) {
-                // Round 2 complete
-                experimentData.timestamps.round2Complete = Date.now();
                 goToStage4();
             } else {
                 initializeQuestion2();
             }
         }
 
-        // Go to stage 2 (review)
         function goToStage2() {
             document.getElementById('stage1').classList.remove('active');
             document.getElementById('stage2').classList.add('active');
             
-            // Update progress to 50%
             document.getElementById('progressFill').style.width = '50%';
-            document.getElementById('progressText').textContent = 'Round 1 Complete - Review Phase';
+            document.getElementById('progressText').textContent = 'Review Phase';
             
-            // Generate review content
+            startMouseTracking();
             generateAnswerReview();
         }
 
-        // ✅ スペルチェック：赤い波線で間違い表示
         function generateAnswerReview() {
             const reviewContainer = document.getElementById('answersReview');
             let reviewHTML = '<div style="line-height: 2.5; font-size: 1.2em;">';
-            
-            const round1Accuracy = calculateAccuracy(experimentData.round1Answers);
-            reviewHTML += `<div style="background: rgba(102, 126, 234, 0.1); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
-                <strong>Round 1 Results:</strong> ${round1Accuracy}% accuracy (${experimentData.round1Answers.filter(a => a.isCorrect).length}/${experimentData.round1Answers.length} correct)
-            </div>`;
             
             experimentData.round1Answers.forEach((item, index) => {
                 const questionText = audioQuestions[item.questionIndex].sentence;
                 
                 if (item.isCorrect) {
                     const filledSentence = questionText.replace('____', 
-                        `<strong style="color: #28a745; background: rgba(40, 167, 69, 0.1); padding: 2px 6px; border-radius: 4px;">${item.userAnswer}</strong>`);
+                        `<strong style="color: #333; background: rgba(0, 0, 0, 0.05); padding: 2px 6px; border-radius: 4px;">${item.userAnswer}</strong>`);
                     reviewHTML += `<p>${index + 1}. ${filledSentence}</p>`;
                 } else {
                     const filledSentence = questionText.replace('____', 
@@ -1127,21 +1492,21 @@
             reviewContainer.innerHTML = reviewHTML;
         }
 
-        // Show correction popup
         function showCorrection(index, correctAnswer, userAnswer) {
-            // Remove any existing popups
+            trackReviewClick('spell_check_click', { 
+                questionIndex: index, 
+                userAnswer: userAnswer, 
+                correctAnswer: correctAnswer,
+                questionNumber: index + 1 // 添加问题号码 (1-50)
+            });
+            
             const existingPopups = document.querySelectorAll('.word-correction-popup');
             existingPopups.forEach(popup => popup.remove());
             
-            // Create popup
             const popup = document.createElement('div');
             popup.className = 'word-correction-popup';
-            popup.innerHTML = `
-                <div class="correction-option">❌ Your answer: ${userAnswer}</div>
-                <div class="correction-option">✅ Correct: ${correctAnswer}</div>
-            `;
+            popup.innerHTML = `<div class="correction-option">${correctAnswer}</div>`;
             
-            // Position popup
             const errorElement = event.target;
             const rect = errorElement.getBoundingClientRect();
             popup.style.left = Math.min(rect.left, window.innerWidth - 200) + 'px';
@@ -1149,80 +1514,146 @@
             
             document.body.appendChild(popup);
             
-            // Remove popup after 4 seconds
             setTimeout(() => {
                 popup.remove();
-            }, 4000);
+            }, 3000);
             
-            // Track spell check interaction
             experimentData.spellCheckClicks++;
         }
 
-        // Go to stage 3 (Round 2)
-        function goToStage3() {
+        async function goToStage3() {
+            await saveMouseTrackingData();
+            
             document.getElementById('stage2').classList.remove('active');
             document.getElementById('stage3').classList.add('active');
             
-            // Reset question index for Round 2
             currentQuestionIndex = 0;
-            currentRound = 2;
+            currentPhase = 'phase2';
             
-            // Update progress display
-            document.getElementById('progressText').textContent = 'Round 2: Starting...';
+            document.getElementById('progressText').textContent = 'Starting Phase 2...';
             
-            initializeQuestion2();
+            // 确保在页面切换后立即开始音频播放
+            setTimeout(() => {
+                initializeQuestion2();
+            }, 100);
         }
 
-        // Go to stage 4 (survey)
         function goToStage4() {
             document.getElementById('stage3').classList.remove('active');
             document.getElementById('stage4').classList.add('active');
             
-            // Update progress to 100%
             document.getElementById('progressFill').style.width = '100%';
-            document.getElementById('progressText').textContent = 'Experiment Complete - Survey Phase';
-            
-            // Clear any remaining timers
-            if (countdownTimer) clearInterval(countdownTimer);
-            if (autoPlayTimer) clearTimeout(autoPlayTimer);
+            document.getElementById('progressText').textContent = 'Survey Phase';
         }
 
-        // Complete experiment
-        function completeExperiment() {
+        // 切换拼写检查子问题的显示
+        function toggleSpellCheckerQuestions(show) {
+            const subQuestions = document.getElementById('spellCheckerSubQuestions');
+            if (subQuestions) {
+                subQuestions.style.display = show ? 'block' : 'none';
+                
+                // 如果隐藏了子问题，清除已选择的答案
+                if (!show) {
+                    const checkboxes = subQuestions.querySelectorAll('input[type="checkbox"]');
+                    checkboxes.forEach(cb => cb.checked = false);
+                    const radios = subQuestions.querySelectorAll('input[type="radio"]');
+                    radios.forEach(radio => radio.checked = false);
+                    const otherInput = document.getElementById('otherSpellChecker');
+                    if (otherInput) {
+                        otherInput.value = '';
+                        otherInput.disabled = true;
+                    }
+                }
+            }
+        }
+
+        // 切换"其他"输入框的启用状态
+        function toggleOtherInput(checkbox) {
+            const otherInput = document.getElementById('otherSpellChecker');
+            if (otherInput) {
+                otherInput.disabled = !checkbox.checked;
+                if (!checkbox.checked) {
+                    otherInput.value = '';
+                }
+            }
+        }
+
+        async function completeExperiment() {
             const spinner = document.getElementById('submitSpinner');
             const button = event.target;
             
             spinner.style.display = 'inline-block';
             button.disabled = true;
             
-            // Collect survey responses
             const surveyData = {};
             
-            ['difficulty', 'audio_feature', 'strict_matching'].forEach(name => {
+            // 收集单选题答案
+            ['difficulty', 'confidence', 'notice_mistakes', 'use_spell_checker', 'spell_checker_helpful', 'proofreading', 'improvement'].forEach(name => {
                 const radio = document.querySelector(`input[name="${name}"]:checked`);
-                if (radio) surveyData[name] = radio.value;
+                if (radio) {
+                    surveyData[name] = radio.value;
+                }
             });
             
-            surveyData.additionalComments = document.getElementById('additionalComments').value;
+            // 收集多选题答案（拼写检查工具）
+            const spellCheckerTools = [];
+            const toolCheckboxes = document.querySelectorAll('input[name="spell_checker_tools"]:checked');
+            toolCheckboxes.forEach(checkbox => {
+                if (checkbox.value === 'other') {
+                    const otherValue = document.getElementById('otherSpellChecker').value.trim();
+                    if (otherValue) {
+                        spellCheckerTools.push(`other: ${otherValue}`);
+                    }
+                } else {
+                    spellCheckerTools.push(checkbox.value);
+                }
+            });
+            surveyData.spell_checker_tools = spellCheckerTools;
+            
             experimentData.surveyResponses = surveyData;
             experimentData.timestamps.experimentComplete = Date.now();
             
-            // Simulate data submission
+            // 计算播放按钮统计数据
+            experimentData.playButtonStats.averageClicksPerQuestion = 
+                (experimentData.playButtonStats.phase1TotalClicks + experimentData.playButtonStats.phase2TotalClicks) / 100;
+            
+            const completionCode = generateCompletionCode();
+            
+            // Firebase保存调查数据和播放统计
+            if (firebaseInitialized) {
+                try {
+                    await db.collection('survey_responses').add({
+                        sessionId: sessionId,
+                        surveyData: surveyData,
+                        completionCode: completionCode,
+                        timestamp: firebase.firestore.Timestamp.now()
+                    });
+                    
+                    // 保存播放按钮统计数据
+                    await recordPlayButtonStats();
+                    
+                    console.log('📋 调查数据和播放统计已保存');
+                } catch (error) {
+                    console.error('❌ 保存调查数据失败:', error);
+                }
+            }
+            
             setTimeout(() => {
                 spinner.style.display = 'none';
                 button.disabled = false;
                 
-                // Go to completion stage
                 document.getElementById('stage4').classList.remove('active');
                 document.getElementById('stage5').classList.add('active');
                 
-                displayFinalResults();
-                console.log('Experiment Data:', experimentData);
+                displayFinalResults(completionCode);
             }, 2000);
         }
 
-        // Display final results
-        function displayFinalResults() {
+        function generateCompletionCode() {
+            return 'EXP' + Date.now().toString().slice(-6);
+        }
+
+        function displayFinalResults(completionCode) {
             const resultsContainer = document.getElementById('finalResults');
             
             const round1Accuracy = calculateAccuracy(experimentData.round1Answers);
@@ -1231,17 +1662,19 @@
                                                experimentData.round2Answers.filter(a => a.isCorrect).length) / 
                                                (experimentData.round1Answers.length + experimentData.round2Answers.length)) * 100);
             
-            const totalTime = Math.round((experimentData.timestamps.experimentComplete - experimentData.timestamps.start) / 1000 / 60);
+            // 计算播放按钮统计
+            const totalPlayClicks = experimentData.playButtonStats.phase1TotalClicks + experimentData.playButtonStats.phase2TotalClicks;
+            const avgClicksPerQuestion = (totalPlayClicks / 100).toFixed(1);
             
             resultsContainer.innerHTML = `
                 <div class="stats-display">
                     <div class="stat-card">
                         <div class="stat-number">${round1Accuracy}%</div>
-                        <div>Round 1 Accuracy</div>
+                        <div>Phase 1 Accuracy</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-number">${round2Accuracy}%</div>
-                        <div>Round 2 Accuracy</div>
+                        <div>Phase 2 Accuracy</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-number">${overallAccuracy}%</div>
@@ -1252,23 +1685,34 @@
                         <div>Total Questions</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">${totalTime}</div>
-                        <div>Minutes</div>
-                    </div>
-                    <div class="stat-card">
                         <div class="stat-number">${experimentData.spellCheckClicks}</div>
                         <div>Spell Checks</div>
                     </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${experimentData.reviewPhaseClicks.length}</div>
+                        <div>Review Clicks</div>
+                    </div>
                 </div>
-                <p style="margin-top: 25px; font-size: 1.1em; color: rgba(255,255,255,0.9);">
-                    <strong>Strict Matching:</strong> ${SYSTEM_CONFIG.strictMatching ? 'Enabled' : 'Disabled'} | 
-                    <strong>Auto-plays:</strong> ${experimentData.autoPlayCount} | 
-                    <strong>Participant ID:</strong> ${experimentData.participantId}
+                
+                <div style="background: rgba(255,255,255,0.2); padding: 20px; border-radius: 12px; margin-top: 25px;">
+                    <h3 style="margin-bottom: 15px; font-size: 1.4em;">🎯 Completion Code for Prolific:</h3>
+                    <div style="background: rgba(255,255,255,0.9); color: #333; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 1.5em; font-weight: bold; text-align: center; letter-spacing: 2px;">
+                        ${completionCode}
+                    </div>
+                    <p style="margin-top: 15px; font-size: 1.1em;">
+                        Please copy this code and paste it into Prolific to receive your payment.
+                    </p>
+                </div>
+                
+                <p style="margin-top: 25px; font-size: 1.1em;">
+                    <strong>Participant ID:</strong> ${experimentData.participantId}<br>
+                    <strong>Session ID:</strong> ${sessionId}<br>
+                    <strong>Firebase Status:</strong> ${firebaseInitialized ? '✅ Connected' : '❌ Not Connected'}
                 </p>
             `;
         }
 
-        // Keyboard navigation
+        // 键盘导航
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
                 const activeStage = document.querySelector('.stage.active');
@@ -1290,21 +1734,44 @@
             }
         });
 
-        // Initialize experiment when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎧 Audio Listening Experiment v8.0 - System Specifications:');
-            console.log('✅ 厳格な答え判定：正確一致のみ正解');
-            console.log('✅ 自動再生機能：3秒カウントダウン');
-            console.log('✅ スペルチェック：赤い波線で間違い表示');
-            console.log('✅ 2ラウンド制：50問 × 2 = 100問総計');
+        function enableAudio() {
+            const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAAAQQBEAEEAhAIBAQEAAQAAAQABAAABAAgABgAGAAYABgAGAA==');
+            silentAudio.volume = 0;
+            silentAudio.play().then(() => {
+                console.log('Audio context enabled');
+            }).catch(() => {
+                console.log('Audio context failed to enable');
+            });
+        }
+
+        // ============ 初始化 ============
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🎧 Audio Listening Experiment v8.1 - Enhanced with Play Tracking & Focus Management');
             
-            initializeQuestion();
+            // 初始化Firebase
+            const firebaseReady = await initializeFirebase();
+            
+            if (firebaseReady) {
+                console.log('✅ Firebase已就绪，开始记录数据');
+            } else {
+                console.log('⚠️ Firebase未就绪，实验将在无数据记录模式下运行');
+            }
+            
+            // 启用音频上下文（用户交互后）
+            document.addEventListener('click', enableAudio, { once: true });
+            document.addEventListener('keydown', enableAudio, { once: true });
+            
+            // 显示欢迎页面，不自动开始实验
+            console.log('显示欢迎页面，等待用户输入Prolific ID');
         });
 
-        // Cleanup timers when page unloads
+        // 页面离开时清理
         window.addEventListener('beforeunload', function() {
             if (countdownTimer) clearInterval(countdownTimer);
-            if (autoPlayTimer) clearTimeout(autoPlayTimer);
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
         });
     </script>
 </body>
