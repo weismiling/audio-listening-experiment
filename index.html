@@ -357,6 +357,8 @@
             border-left: 4px solid #ffc107;
         }
 
+        /* 移除：播放统计显示样式 */
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -743,6 +745,13 @@
         let isReviewPhase = false;
         let mouseClickData = [];
         
+        // 新增：播放按钮点击计数
+        let playButtonClickCounts = {
+            phase1: {}, // 按问题索引记录点击次数 {0: 3, 1: 2, ...}
+            phase2: {}
+        };
+        let currentQuestionPlayCount = 0; // 当前问题的播放次数
+        
         // 原有实验数据结构
         let experimentData = {
             participantId: 'P' + Date.now(),
@@ -751,7 +760,15 @@
             round2Answers: [],
             reviewPhaseClicks: [],
             spellCheckClicks: 0,
-            timestamps: { start: Date.now() }
+            timestamps: { start: Date.now() },
+            // 新增：播放按钮统计数据
+            playButtonStats: {
+                phase1TotalClicks: 0,
+                phase2TotalClicks: 0,
+                phase1DetailedClicks: {},
+                phase2DetailedClicks: {},
+                averageClicksPerQuestion: 0
+            }
         };
 
         // 50个问题数据
@@ -812,6 +829,52 @@
         let countdownTimer = null;
         let currentAudio = null;
 
+        // ============ 新增功能：播放按钮点击统计 (后台记录，不显示) ============
+        function incrementPlayCount(phase) {
+            currentQuestionPlayCount++;
+            
+            // 后台记录数据，不更新界面显示
+            if (phase === 'phase1') {
+                playButtonClickCounts.phase1[currentQuestionIndex] = currentQuestionPlayCount;
+                experimentData.playButtonStats.phase1TotalClicks++;
+                experimentData.playButtonStats.phase1DetailedClicks[currentQuestionIndex] = currentQuestionPlayCount;
+            } else if (phase === 'phase2') {
+                playButtonClickCounts.phase2[currentQuestionIndex] = currentQuestionPlayCount;
+                experimentData.playButtonStats.phase2TotalClicks++;
+                experimentData.playButtonStats.phase2DetailedClicks[currentQuestionIndex] = currentQuestionPlayCount;
+            }
+            
+            console.log(`📊 播放统计 - ${phase} 问题${currentQuestionIndex + 1}: ${currentQuestionPlayCount}次播放 (后台记录)`);
+        }
+
+        function resetPlayCount() {
+            currentQuestionPlayCount = 0;
+            // 不需要隐藏界面元素，因为界面不显示播放次数
+        }
+
+        // ============ 新增功能：保持输入框焦点 ============
+        function maintainInputFocus() {
+            // 在点击播放按钮后，延迟一小段时间再重新聚焦到输入框
+            setTimeout(() => {
+                const activeStage = document.querySelector('.stage.active');
+                if (activeStage) {
+                    let inputElement = null;
+                    if (activeStage.id === 'stage1') {
+                        inputElement = document.getElementById('answerInput');
+                    } else if (activeStage.id === 'stage3') {
+                        inputElement = document.getElementById('answerInput2');
+                    }
+                    
+                    if (inputElement) {
+                        inputElement.focus();
+                        // 确保光标在输入框末尾
+                        const length = inputElement.value.length;
+                        inputElement.setSelectionRange(length, length);
+                    }
+                }
+            }, 100);
+        }
+
         // ============ Firebase数据记录函数 ============
         async function initializeExperiment() {
             if (!firebaseInitialized) {
@@ -842,7 +905,7 @@
             }
         }
 
-        async function recordPhase1Answer(questionNumber, audioFile, userAnswer, correctAnswer, responseTime) {
+        async function recordPhase1Answer(questionNumber, audioFile, userAnswer, correctAnswer, responseTime, playCount) {
             if (!firebaseInitialized) return;
             
             try {
@@ -855,11 +918,12 @@
                     correctAnswer: correctAnswer,
                     isCorrect: userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim(),
                     responseTime: responseTime,
+                    playButtonClicks: playCount, // 新增：播放次数
                     timestamp: firebase.firestore.Timestamp.now()
                 };
                 
                 await db.collection('phase1_answers').add(answerData);
-                console.log(`📝 阶段1 问题${questionNumber} 已记录`);
+                console.log(`📝 阶段1 问题${questionNumber} 已记录 (播放${playCount}次)`);
                 
                 if (questionNumber === 50) {
                     await db.collection('audio_experiment_sessions').doc(sessionId).update({
@@ -872,7 +936,7 @@
             }
         }
 
-        async function recordPhase2Answer(questionNumber, audioFile, userAnswer, correctAnswer, responseTime) {
+        async function recordPhase2Answer(questionNumber, audioFile, userAnswer, correctAnswer, responseTime, playCount) {
             if (!firebaseInitialized) return;
             
             try {
@@ -885,11 +949,12 @@
                     correctAnswer: correctAnswer,
                     isCorrect: userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim(),
                     responseTime: responseTime,
+                    playButtonClicks: playCount, // 新增：播放次数
                     timestamp: firebase.firestore.Timestamp.now()
                 };
                 
                 await db.collection('phase2_answers').add(answerData);
-                console.log(`📝 阶段2 问题${questionNumber + 50} 已记录`);
+                console.log(`📝 阶段2 问题${questionNumber + 50} 已记录 (播放${playCount}次)`);
                 
                 if (questionNumber === 49) { // 第二轮的第50题
                     await db.collection('audio_experiment_sessions').doc(sessionId).update({
@@ -901,6 +966,29 @@
                 }
             } catch (error) {
                 console.error('❌ 记录阶段2答案失败:', error);
+            }
+        }
+
+        // 新增：记录播放按钮统计数据
+        async function recordPlayButtonStats() {
+            if (!firebaseInitialized) return;
+            
+            try {
+                const statsData = {
+                    sessionId: sessionId,
+                    phase1TotalClicks: experimentData.playButtonStats.phase1TotalClicks,
+                    phase2TotalClicks: experimentData.playButtonStats.phase2TotalClicks,
+                    totalClicks: experimentData.playButtonStats.phase1TotalClicks + experimentData.playButtonStats.phase2TotalClicks,
+                    phase1DetailedClicks: experimentData.playButtonStats.phase1DetailedClicks,
+                    phase2DetailedClicks: experimentData.playButtonStats.phase2DetailedClicks,
+                    averageClicksPerQuestion: (experimentData.playButtonStats.phase1TotalClicks + experimentData.playButtonStats.phase2TotalClicks) / 100,
+                    timestamp: firebase.firestore.Timestamp.now()
+                };
+                
+                await db.collection('play_button_statistics').add(statsData);
+                console.log('📊 播放按钮统计数据已保存');
+            } catch (error) {
+                console.error('❌ 保存播放按钮统计数据失败:', error);
             }
         }
 
@@ -1112,6 +1200,10 @@
             const button = document.getElementById(buttonId);
             const question = audioQuestions[currentQuestionIndex];
             
+            // 记录播放次数
+            const currentPhase = (buttonId === 'playButton') ? 'phase1' : 'phase2';
+            incrementPlayCount(currentPhase);
+            
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
@@ -1154,16 +1246,8 @@
                     button.onclick = playAudio2;
                 }
                 
-                const activeStage = document.querySelector('.stage.active');
-                if (activeStage) {
-                    if (activeStage.id === 'stage1') {
-                        const input = document.getElementById('answerInput');
-                        if (input) input.focus();
-                    } else if (activeStage.id === 'stage3') {
-                        const input = document.getElementById('answerInput2');
-                        if (input) input.focus();
-                    }
-                }
+                // 保持输入框焦点
+                maintainInputFocus();
             });
             
             currentAudio.addEventListener('error', (e) => {
@@ -1175,6 +1259,11 @@
                     playRealAudio(buttonId);
                 };
             });
+            
+            // 在音频开始播放后立即恢复输入框焦点
+            setTimeout(() => {
+                maintainInputFocus();
+            }, 200);
         }
 
         function initializeQuestion() {
@@ -1193,6 +1282,9 @@
                     `Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
                 
                 document.getElementById('errorMessage').style.display = 'none';
+                
+                // 重置播放计数
+                resetPlayCount();
                 
                 // 重置播放按钮
                 const button = document.getElementById('playButton');
@@ -1230,6 +1322,9 @@
                     `Question ${currentQuestionIndex + 51} / 100`;
                 
                 document.getElementById('errorMessage2').style.display = 'none';
+                
+                // 重置播放计数
+                resetPlayCount();
                 
                 // 重置播放按钮
                 const button = document.getElementById('playButton2');
@@ -1274,13 +1369,15 @@
             const correctAnswer = audioQuestions[currentQuestionIndex].answer;
             const isCorrect = strictAnswerCheck(answer, correctAnswer);
             const responseTime = Date.now() - experimentData.timestamps.start;
+            const playCount = currentQuestionPlayCount;
             
             experimentData.round1Answers.push({
                 questionIndex: currentQuestionIndex,
                 userAnswer: answer,
                 correctAnswer: correctAnswer,
                 isCorrect: isCorrect,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                playCount: playCount // 新增：记录播放次数
             });
             
             // Firebase记录
@@ -1289,7 +1386,8 @@
                 audioQuestions[currentQuestionIndex].audio,
                 answer,
                 correctAnswer,
-                responseTime
+                responseTime,
+                playCount // 新增：传递播放次数
             );
             
             currentQuestionIndex++;
@@ -1314,13 +1412,15 @@
             const correctAnswer = audioQuestions[currentQuestionIndex].answer;
             const isCorrect = strictAnswerCheck(answer, correctAnswer);
             const responseTime = Date.now() - experimentData.timestamps.start;
+            const playCount = currentQuestionPlayCount;
             
             experimentData.round2Answers.push({
                 questionIndex: currentQuestionIndex,
                 userAnswer: answer,
                 correctAnswer: correctAnswer,
                 isCorrect: isCorrect,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                playCount: playCount // 新增：记录播放次数
             });
             
             // Firebase记录
@@ -1329,7 +1429,8 @@
                 audioQuestions[currentQuestionIndex].audio,
                 answer,
                 correctAnswer,
-                responseTime
+                responseTime,
+                playCount // 新增：传递播放次数
             );
             
             currentQuestionIndex++;
@@ -1494,9 +1595,13 @@
             experimentData.surveyResponses = surveyData;
             experimentData.timestamps.experimentComplete = Date.now();
             
+            // 计算播放按钮统计数据
+            experimentData.playButtonStats.averageClicksPerQuestion = 
+                (experimentData.playButtonStats.phase1TotalClicks + experimentData.playButtonStats.phase2TotalClicks) / 100;
+            
             const completionCode = generateCompletionCode();
             
-            // Firebase保存调查数据
+            // Firebase保存调查数据和播放统计
             if (firebaseInitialized) {
                 try {
                     await db.collection('survey_responses').add({
@@ -1505,7 +1610,11 @@
                         completionCode: completionCode,
                         timestamp: firebase.firestore.Timestamp.now()
                     });
-                    console.log('📋 调查数据已保存');
+                    
+                    // 保存播放按钮统计数据
+                    await recordPlayButtonStats();
+                    
+                    console.log('📋 调查数据和播放统计已保存');
                 } catch (error) {
                     console.error('❌ 保存调查数据失败:', error);
                 }
@@ -1534,6 +1643,10 @@
             const overallAccuracy = Math.round(((experimentData.round1Answers.filter(a => a.isCorrect).length + 
                                                experimentData.round2Answers.filter(a => a.isCorrect).length) / 
                                                (experimentData.round1Answers.length + experimentData.round2Answers.length)) * 100);
+            
+            // 计算播放按钮统计
+            const totalPlayClicks = experimentData.playButtonStats.phase1TotalClicks + experimentData.playButtonStats.phase2TotalClicks;
+            const avgClicksPerQuestion = (totalPlayClicks / 100).toFixed(1);
             
             resultsContainer.innerHTML = `
                 <div class="stats-display">
@@ -1615,7 +1728,7 @@
 
         // ============ 初始化 ============
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🎧 Audio Listening Experiment v8.0 - Firebase Enhanced');
+            console.log('🎧 Audio Listening Experiment v8.1 - Enhanced with Play Tracking & Focus Management');
             
             // 初始化Firebase
             const firebaseReady = await initializeFirebase();
