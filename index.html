@@ -376,27 +376,30 @@
         }
 
         .stage-indicator {
-            background: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 12px 25px;
-            border-radius: 25px;
-            font-size: 1.3em;
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-size: 1.4em;
             font-weight: 700;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             text-align: center;
             display: inline-block;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.25);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         .stage-indicator.review {
-            background: #28a745;
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.25);
         }
 
         .stage-indicator.survey {
-            background: #ffc107;
+            background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);
             color: #333;
-            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.25);
         }
 
         /* 移除：播放统计显示样式 */
@@ -481,7 +484,7 @@
             
             <div class="question-card">
                 <div class="question-number" id="questionNumber">
-                    1 / 50
+                    Question 1 / 50
                 </div>
                 <div class="audio-controls">
                     <button class="play-button" id="playButton" onclick="playAudio()">
@@ -531,7 +534,7 @@
             
             <div class="question-card">
                 <div class="question-number" id="questionNumber2">
-                    1 / 50
+                    Question 1 / 50
                 </div>
                 <div class="audio-controls">
                     <button class="play-button" id="playButton2" onclick="playAudio2()">
@@ -1367,7 +1370,7 @@
                     '<input type="text" class="input-field" id="answerInput" placeholder="____" autocomplete="off">');
                 
                 document.getElementById('sentenceDisplay').innerHTML = sentenceWithBlank;
-                document.getElementById('questionNumber').textContent = `${currentQuestionIndex + 1} / 50`;
+                document.getElementById('questionNumber').textContent = `Question ${currentQuestionIndex + 1} / 50`;
                 
                 // 保持全局进度 (0-50% for Phase 1)
                 const progress = (currentQuestionIndex / audioQuestions.length) * 50;
@@ -1406,7 +1409,7 @@
                     '<input type="text" class="input-field" id="answerInput2" placeholder="____" autocomplete="off">');
                 
                 document.getElementById('sentenceDisplay2').innerHTML = sentenceWithBlank;
-                document.getElementById('questionNumber2').textContent = `${currentQuestionIndex + 1} / 50`;
+                document.getElementById('questionNumber2').textContent = `Question ${currentQuestionIndex + 1} / 50`;
                 
                 // 保持全局进度 (50-100% for Phase 2)
                 const progress = 50 + (currentQuestionIndex / audioQuestions.length) * 50;
@@ -1874,7 +1877,7 @@
 
         // ============ 初始化 ============
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🎧 Audio Listening Experiment v8.5 - Enhanced Stage Indicators');
+            console.log('🎧 Audio Listening Experiment v8.6 - Enhanced UI Design');
             
             // 初始化Firebase
             const firebaseReady = await initializeFirebase();
