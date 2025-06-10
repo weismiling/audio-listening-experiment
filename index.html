@@ -446,7 +446,9 @@
         <!-- Stage 1: First Test (Questions 1-50) -->
         <div class="stage" id="stage1">
            <div class="progress-container">
-
+            <div class="progress-info">
+                <span id="progressText">Phase 1 - Listening Task</span>
+            </div>
             <div class="progress-bar">
                 <div class="progress-fill" id="progressFill"></div>
             </div>
@@ -454,7 +456,7 @@
             
             <div class="question-card">
                 <div class="question-number" id="questionNumber">
-                    Question 1 / 50
+                    Phase 1 - Listening Task
                 </div>
                 <div class="audio-controls">
                     <button class="play-button" id="playButton" onclick="playAudio()">
@@ -493,7 +495,7 @@
             <!-- 修复问题1：为阶段3添加进度条 -->
             <div class="progress-container">
                 <div class="progress-info">
-                    <span id="progressText2">Question 51 / 100</span>
+                    <span id="progressText2">Phase 2 - Listening Task</span>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill2"></div>
@@ -502,7 +504,7 @@
             
             <div class="question-card">
                 <div class="question-number" id="questionNumber2">
-                    Question 51 / 100
+                    Phase 2 - Listening Task
                 </div>
                 <div class="audio-controls">
                     <button class="play-button" id="playButton2" onclick="playAudio2()">
@@ -1125,7 +1127,7 @@
             document.getElementById('stage1').classList.add('active');
             
             // 更新进度显示
-            document.getElementById('progressText').textContent = 'Question 1 / 50';
+            document.getElementById('progressText').textContent = 'Phase 1 - Listening Task';
             
             // 初始化第一个问题
             setTimeout(() => {
@@ -1338,13 +1340,11 @@
                     '<input type="text" class="input-field" id="answerInput" placeholder="____" autocomplete="off">');
                 
                 document.getElementById('sentenceDisplay').innerHTML = sentenceWithBlank;
-                document.getElementById('questionNumber').textContent = 
-                    `Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
+                document.getElementById('questionNumber').textContent = 'Phase 1 - Listening Task';
                 
+                // 方案A：真实全局进度 (0-50% for Phase 1)
                 const progress = (currentQuestionIndex / audioQuestions.length) * 50;
                 document.getElementById('progressFill').style.width = progress + '%';
-                document.getElementById('progressText').textContent = 
-                    `Question ${currentQuestionIndex + 1} / ${audioQuestions.length}`;
                 
                 document.getElementById('errorMessage').style.display = 'none';
                 
@@ -1379,14 +1379,11 @@
                     '<input type="text" class="input-field" id="answerInput2" placeholder="____" autocomplete="off">');
                 
                 document.getElementById('sentenceDisplay2').innerHTML = sentenceWithBlank;
-                document.getElementById('questionNumber2').textContent = 
-                    `Question ${currentQuestionIndex + 51} / 100`;
+                document.getElementById('questionNumber2').textContent = 'Phase 2 - Listening Task';
                 
-                // 修复：正确更新阶段3的进度条
+                // 方案A：真实全局进度 (50-100% for Phase 2)
                 const progress = 50 + (currentQuestionIndex / audioQuestions.length) * 50;
                 document.getElementById('progressFill2').style.width = progress + '%';
-                document.getElementById('progressText2').textContent = 
-                    `Question ${currentQuestionIndex + 51} / 100`;
                 
                 document.getElementById('errorMessage2').style.display = 'none';
                 
@@ -1587,7 +1584,7 @@
             currentPhase = 'phase2';
             
             // 修复：正确设置阶段3的进度显示
-            document.getElementById('progressText2').textContent = 'Starting Phase 2...';
+            document.getElementById('progressText2').textContent = 'Phase 2 - Listening Task';
             
             // 确保在页面切换后立即开始音频播放
             setTimeout(() => {
@@ -1850,7 +1847,7 @@
 
         // ============ 初始化 ============
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🎧 Audio Listening Experiment v8.2 - Fixed Progress Bar & Required Survey');
+            console.log('🎧 Audio Listening Experiment v8.3 - Simplified Progress Display');
             
             // 初始化Firebase
             const firebaseReady = await initializeFirebase();
