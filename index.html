@@ -375,6 +375,27 @@
             border-radius: 5px;
         }
 
+        .stage-indicator {
+            background: #667eea;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .stage-indicator.review {
+            background: #28a745;
+        }
+
+        .stage-indicator.survey {
+            background: #ffc107;
+            color: #333;
+        }
+
         /* 移除：播放统计显示样式 */
 
         @keyframes spin {
@@ -445,9 +466,10 @@
 
         <!-- Stage 1: First Test (Questions 1-50) -->
         <div class="stage" id="stage1">
+            <div class="stage-indicator">Phase 1</div>
            <div class="progress-container">
             <div class="progress-info">
-                <span id="progressText">Phase 1 - Listening Task</span>
+                <span id="progressText"></span>
             </div>
             <div class="progress-bar">
                 <div class="progress-fill" id="progressFill"></div>
@@ -456,7 +478,7 @@
             
             <div class="question-card">
                 <div class="question-number" id="questionNumber">
-                    Phase 1 - Listening Task
+                    1 / 50
                 </div>
                 <div class="audio-controls">
                     <button class="play-button" id="playButton" onclick="playAudio()">
@@ -480,6 +502,7 @@
 
         <!-- Stage 2: Answer Review (Mouse tracking) -->
         <div class="stage" id="stage2">
+            <div class="stage-indicator review">Review</div>
             <div class="feedback-section">
                 <h2>📝 Answer Review </h2>
                 <p><strong>Spell Check:</strong> Click red wavy lines to see correct answers</p>
@@ -492,10 +515,11 @@
 
         <!-- Stage 3: Second Test (Questions 51-100) -->
         <div class="stage" id="stage3">
+            <div class="stage-indicator">Phase 2</div>
             <!-- 修复问题1：为阶段3添加进度条 -->
             <div class="progress-container">
                 <div class="progress-info">
-                    <span id="progressText2">Phase 2 - Listening Task</span>
+                    <span id="progressText2"></span>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill2"></div>
@@ -504,7 +528,7 @@
             
             <div class="question-card">
                 <div class="question-number" id="questionNumber2">
-                    Phase 2 - Listening Task
+                    1 / 50
                 </div>
                 <div class="audio-controls">
                     <button class="play-button" id="playButton2" onclick="playAudio2()">
@@ -528,6 +552,7 @@
 
         <!-- Stage 4: Survey -->
         <div class="stage" id="stage4">
+            <div class="stage-indicator survey">Post-Experiment Survey</div>
             <div class="survey-section">
                 <h2>📋 Post-Experiment Survey</h2>
                 <p class="info-text">Thank you for completing the experiment! Please share your feedback.</p>
@@ -1126,8 +1151,8 @@
             document.getElementById('welcomeStage').classList.remove('active');
             document.getElementById('stage1').classList.add('active');
             
-            // 更新进度显示
-            document.getElementById('progressText').textContent = 'Phase 1 - Listening Task';
+            // 更新进度显示 - 清空进度条文本
+            document.getElementById('progressText').textContent = '';
             
             // 初始化第一个问题
             setTimeout(() => {
@@ -1340,9 +1365,9 @@
                     '<input type="text" class="input-field" id="answerInput" placeholder="____" autocomplete="off">');
                 
                 document.getElementById('sentenceDisplay').innerHTML = sentenceWithBlank;
-                document.getElementById('questionNumber').textContent = 'Phase 1 - Listening Task';
+                document.getElementById('questionNumber').textContent = `${currentQuestionIndex + 1} / 50`;
                 
-                // 方案A：真实全局进度 (0-50% for Phase 1)
+                // 保持全局进度 (0-50% for Phase 1)
                 const progress = (currentQuestionIndex / audioQuestions.length) * 50;
                 document.getElementById('progressFill').style.width = progress + '%';
                 
@@ -1379,9 +1404,9 @@
                     '<input type="text" class="input-field" id="answerInput2" placeholder="____" autocomplete="off">');
                 
                 document.getElementById('sentenceDisplay2').innerHTML = sentenceWithBlank;
-                document.getElementById('questionNumber2').textContent = 'Phase 2 - Listening Task';
+                document.getElementById('questionNumber2').textContent = `${currentQuestionIndex + 1} / 50`;
                 
-                // 方案A：真实全局进度 (50-100% for Phase 2)
+                // 保持全局进度 (50-100% for Phase 2)
                 const progress = 50 + (currentQuestionIndex / audioQuestions.length) * 50;
                 document.getElementById('progressFill2').style.width = progress + '%';
                 
@@ -1583,8 +1608,8 @@
             currentQuestionIndex = 0;
             currentPhase = 'phase2';
             
-            // 修复：正确设置阶段3的进度显示
-            document.getElementById('progressText2').textContent = 'Phase 2 - Listening Task';
+            // 清空阶段3的进度显示文本
+            document.getElementById('progressText2').textContent = '';
             
             // 确保在页面切换后立即开始音频播放
             setTimeout(() => {
@@ -1847,7 +1872,7 @@
 
         // ============ 初始化 ============
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🎧 Audio Listening Experiment v8.3 - Simplified Progress Display');
+            console.log('🎧 Audio Listening Experiment v8.4 - Added Stage Indicators');
             
             // 初始化Firebase
             const firebaseReady = await initializeFirebase();
