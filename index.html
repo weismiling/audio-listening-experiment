@@ -422,7 +422,7 @@
         <!-- Welcome Stage: Experiment Introduction -->
         <div class="stage active" id="welcomeStage">
             <div class="question-card">
-                <h2 style="text-align: center; color: #667eea; margin-bottom: 30px;">Welcome to Audio Listening Experiment</h2>
+                <h2 style="text-align: center; color: #667eea; margin-bottom: 30px;">🎧 Welcome to Audio Listening Experiment</h2>
                 
                 <div style="background: #e3f2fd; padding: 25px; border-radius: 15px; margin-bottom: 25px;">
                     <h3 style="color: #1976d2; margin-bottom: 20px;">📋 Experiment Instructions:</h3>
@@ -802,7 +802,7 @@
         }
 
         // ============ 全局变量 ============
-        const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        let sessionId = null; // 改为动态生成，基于ProlificID
         let currentPhase = 'phase1';
         let isReviewPhase = false;
         let mouseClickData = [];
@@ -944,13 +944,29 @@
                 return;
             }
 
+            if (!sessionId) {
+                console.error('❌ SessionID未生成，无法初始化实验');
+                return;
+            }
+
             try {
-                // 使用用户输入的Prolific ID
-                const prolificId = experimentData.prolificPID || 'manual_input_' + Date.now();
+                // 使用基于ProlificID的SessionID
+                const prolificId = experimentData.prolificPID || 'unknown';
+                
+                // 检查是否已存在相同的ProlificID记录
+                const existingSession = await db.collection('audio_experiment_sessions')
+                    .where('prolificId', '==', prolificId)
+                    .get();
+                
+                if (!existingSession.empty) {
+                    console.log('⚠️ 检测到ProlificID重复参与:', prolificId);
+                    // 可以选择警告用户或继续（这里选择继续并记录）
+                }
                 
                 await db.collection('audio_experiment_sessions').doc(sessionId).set({
                     participantId: experimentData.participantId,
                     prolificId: prolificId,
+                    sessionId: sessionId, // 明确记录SessionID
                     startTime: firebase.firestore.Timestamp.now(),
                     userAgent: navigator.userAgent,
                     screenResolution: `${screen.width}x${screen.height}`,
@@ -961,7 +977,8 @@
                     created_at: firebase.firestore.Timestamp.now()
                 });
                 
-                console.log('🔥 实验会话已创建, Session ID:', sessionId);
+                console.log('🔥 实验会话已创建, SessionID:', sessionId);
+                console.log('🆔 基于ProlificID:', prolificId);
             } catch (error) {
                 console.error('❌ 创建实验会话失败:', error);
             }
@@ -1149,8 +1166,15 @@
                 return;
             }
             
+            // 生成基于ProlificID的SessionID (方案B)
+            sessionId = prolificId + '_' + Date.now();
+            console.log('🆔 生成SessionID:', sessionId);
+            
             // 保存Prolific ID
             experimentData.prolificPID = prolificId;
+            
+            // 初始化Firebase实验记录
+            initializeExperiment();
             
             // 切换到第一阶段
             document.getElementById('welcomeStage').classList.remove('active');
@@ -1836,8 +1860,8 @@
                 </div>
                 
                 <p style="margin-top: 25px; font-size: 1.1em;">
-                    <strong>Participant ID:</strong> ${experimentData.participantId}<br>
-                    <strong>Session ID:</strong> ${sessionId}<br>
+                    <strong>Prolific ID:</strong> ${experimentData.prolificPID}<br>
+                    <strong>Session ID:</strong> ${sessionId || 'Not Generated'}<br>
                     <strong>Firebase Status:</strong> ${firebaseInitialized ? '✅ Connected' : '❌ Not Connected'}
                 </p>
             `;
@@ -1877,7 +1901,7 @@
 
         // ============ 初始化 ============
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🎧 Audio Listening Experiment v8.7 - Optimized Layout Spacing');
+            console.log('🎧 Audio Listening Experiment v8.8 - ProlificID-based SessionID');
             
             // 初始化Firebase
             const firebaseReady = await initializeFirebase();
