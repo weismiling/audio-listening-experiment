@@ -357,6 +357,24 @@
             border-left: 4px solid #ffc107;
         }
 
+        /* 新增：调查问卷必答提示样式 */
+        .survey-error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+            border-left: 4px solid #dc3545;
+        }
+
+        .required-question {
+            border-left: 4px solid #dc3545;
+            padding-left: 15px;
+            background: rgba(220, 53, 69, 0.05);
+            border-radius: 5px;
+        }
+
         /* 移除：播放统计显示样式 */
 
         @keyframes spin {
@@ -473,15 +491,15 @@
         </div>
 
         <!-- Stage 3: Second Test (Questions 51-100) -->
-        <div class="stage" id="stage3"> 
-            
-             <div class="progress-container">
-            <div class="progress-info">
-                <span id="progressText">Question 51 / 100</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
+        <div class="stage" id="stage3">
+            <!-- 修复问题1：为阶段3添加进度条 -->
+            <div class="progress-container">
+                <div class="progress-info">
+                    <span id="progressText2">Question 51 / 100</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill2"></div>
+                </div>
             </div>
             
             <div class="question-card">
@@ -514,8 +532,13 @@
                 <h2>📋 Post-Experiment Survey</h2>
                 <p class="info-text">Thank you for completing the experiment! Please share your feedback.</p>
                 
-                <div class="survey-question">
-                    <label><strong>1. How difficult did you find this task?</strong></label>
+                <!-- 修复问题2：调查问卷必答错误提示 -->
+                <div class="survey-error" id="surveyErrorMessage">
+                    Please answer all required questions before submitting.
+                </div>
+                
+                <div class="survey-question required-question">
+                    <label><strong>1. How difficult did you find this task? *</strong></label>
                     <div class="radio-group">
                         <label class="radio-option">
                             <input type="radio" name="difficulty" value="very_difficult"> Very difficult
@@ -535,8 +558,8 @@
                     </div>
                 </div>
 
-                <div class="survey-question">
-                    <label><strong>2. How confident are you in your answers to the previous questions?</strong></label>
+                <div class="survey-question required-question">
+                    <label><strong>2. How confident are you in your answers to the previous questions? *</strong></label>
                     <div class="radio-group">
                         <label class="radio-option">
                             <input type="radio" name="confidence" value="very_confident"> Very confident
@@ -556,8 +579,8 @@
                     </div>
                 </div>
 
-                <div class="survey-question">
-                    <label><strong>3. Do you often notice your own spelling mistakes in your daily work or studies?</strong></label>
+                <div class="survey-question required-question">
+                    <label><strong>3. Do you often notice your own spelling mistakes in your daily work or studies? *</strong></label>
                     <div class="radio-group">
                         <label class="radio-option">
                             <input type="radio" name="notice_mistakes" value="yes"> Yes
@@ -571,8 +594,8 @@
                     </div>
                 </div>
 
-                <div class="survey-question">
-                    <label><strong>4. Do you use a spell checker in your daily work or studies?</strong></label>
+                <div class="survey-question required-question">
+                    <label><strong>4. Do you use a spell checker in your daily work or studies? *</strong></label>
                     <div class="radio-group">
                         <label class="radio-option">
                             <input type="radio" name="use_spell_checker" value="yes" onchange="toggleSpellCheckerQuestions(true)"> Yes
@@ -608,7 +631,7 @@
                     </div>
 
                     <div style="margin-top: 20px;">
-                        <label><strong>4-2. Does using a spell checker help you avoid making the same mistakes in the future?</strong></label>
+                        <label><strong>4-2. Does using a spell checker help you avoid making the same mistakes in the future? *</strong></label>
                         <div class="radio-group" style="margin-top: 10px;">
                             <label class="radio-option">
                                 <input type="radio" name="spell_checker_helpful" value="very_helpful"> Very helpful
@@ -629,8 +652,8 @@
                     </div>
                 </div>
 
-                <div class="survey-question">
-                    <label><strong>5. After Phase 1, there was a stage to confirm your mistakes. Did you proofread your writing at that stage?</strong></label>
+                <div class="survey-question required-question">
+                    <label><strong>5. After Phase 1, there was a stage to confirm your mistakes. Did you proofread your writing at that stage? *</strong></label>
                     <div class="radio-group">
                         <label class="radio-option">
                             <input type="radio" name="proofreading" value="carefully_proofread"> Yes, I carefully proofread and checked the corrections.
@@ -647,8 +670,8 @@
                     </div>
                 </div>
 
-                <div class="survey-question">
-                    <label><strong>6. For the mistakes pointed out in Phase 1, did you improve on them in Phase 2?</strong></label>
+                <div class="survey-question required-question">
+                    <label><strong>6. For the mistakes pointed out in Phase 1, did you improve on them in Phase 2? *</strong></label>
                     <div class="radio-group">
                         <label class="radio-option">
                             <input type="radio" name="improvement" value="corrected_most"> Yes, I corrected most or all of them.
@@ -1350,6 +1373,7 @@
             }
         }
 
+        // 修复问题1：阶段3的进度条更新函数
         function initializeQuestion2() {
             if (currentQuestionIndex < audioQuestions.length) {
                 const question = audioQuestions[currentQuestionIndex];
@@ -1360,9 +1384,10 @@
                 document.getElementById('questionNumber2').textContent = 
                     `Question ${currentQuestionIndex + 51} / 100`;
                 
+                // 修复：正确更新阶段3的进度条
                 const progress = 50 + (currentQuestionIndex / audioQuestions.length) * 50;
-                document.getElementById('progressFill').style.width = progress + '%';
-                document.getElementById('progressText').textContent = 
+                document.getElementById('progressFill2').style.width = progress + '%';
+                document.getElementById('progressText2').textContent = 
                     `Question ${currentQuestionIndex + 51} / 100`;
                 
                 document.getElementById('errorMessage2').style.display = 'none';
@@ -1563,7 +1588,8 @@
             currentQuestionIndex = 0;
             currentPhase = 'phase2';
             
-            document.getElementById('progressText').textContent = 'Starting Phase 2...';
+            // 修复：正确设置阶段3的进度显示
+            document.getElementById('progressText2').textContent = 'Starting Phase 2...';
             
             // 确保在页面切换后立即开始音频播放
             setTimeout(() => {
@@ -1575,8 +1601,9 @@
             document.getElementById('stage3').classList.remove('active');
             document.getElementById('stage4').classList.add('active');
             
-            document.getElementById('progressFill').style.width = '100%';
-            document.getElementById('progressText').textContent = 'Survey Phase';
+            // 修复：确保最终进度条显示100%
+            document.getElementById('progressFill2').style.width = '100%';
+            document.getElementById('progressText2').textContent = 'Survey Phase';
         }
 
         // 切换拼写检查子问题的显示
@@ -1611,7 +1638,53 @@
             }
         }
 
+        // 修复问题2：添加调查问卷必答验证
+        function validateSurveyAnswers() {
+            const requiredQuestions = ['difficulty', 'confidence', 'notice_mistakes', 'use_spell_checker', 'proofreading', 'improvement'];
+            let allAnswered = true;
+            let missingQuestions = [];
+            
+            // 检查基本必答题
+            for (const questionName of requiredQuestions) {
+                const radio = document.querySelector(`input[name="${questionName}"]:checked`);
+                if (!radio) {
+                    allAnswered = false;
+                    missingQuestions.push(questionName);
+                }
+            }
+            
+            // 检查条件必答题：如果选择了使用拼写检查工具，则4-2是必答的
+            const useSpellChecker = document.querySelector('input[name="use_spell_checker"]:checked');
+            if (useSpellChecker && useSpellChecker.value === 'yes') {
+                const spellCheckerHelpful = document.querySelector('input[name="spell_checker_helpful"]:checked');
+                if (!spellCheckerHelpful) {
+                    allAnswered = false;
+                    missingQuestions.push('spell_checker_helpful');
+                }
+            }
+            
+            return {
+                isValid: allAnswered,
+                missingQuestions: missingQuestions
+            };
+        }
+
         async function completeExperiment() {
+            // 修复问题2：验证调查问卷是否完整填写
+            const validation = validateSurveyAnswers();
+            if (!validation.isValid) {
+                document.getElementById('surveyErrorMessage').style.display = 'block';
+                // 滚动到错误消息位置
+                document.getElementById('surveyErrorMessage').scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+                return;
+            }
+            
+            // 隐藏错误消息
+            document.getElementById('surveyErrorMessage').style.display = 'none';
+            
             const spinner = document.getElementById('submitSpinner');
             const button = event.target;
             
@@ -1779,7 +1852,7 @@
 
         // ============ 初始化 ============
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🎧 Audio Listening Experiment v8.1 - Enhanced with Play Tracking & Focus Management');
+            console.log('🎧 Audio Listening Experiment v8.2 - Fixed Progress Bar & Required Survey');
             
             // 初始化Firebase
             const firebaseReady = await initializeFirebase();
@@ -1809,3 +1882,4 @@
     </script>
 </body>
 </html>
+                
