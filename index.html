@@ -87,7 +87,7 @@
         }
 
         .progress-container {
-            margin-bottom: 35px;
+            margin-bottom: 25px;
         }
 
         .progress-info {
@@ -116,8 +116,8 @@
         .question-card {
             background: #f8f9ff;
             border-radius: 20px;
-            padding: 35px;
-            margin-bottom: 25px;
+            padding: 30px;
+            margin-bottom: 20px;
             border: 1px solid rgba(102, 126, 234, 0.1);
         }
 
@@ -125,12 +125,12 @@
             color: #667eea;
             font-weight: 700;
             font-size: 1.3em;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .audio-controls {
             text-align: center;
-            margin: 25px 0;
+            margin: 20px 0;
         }
 
         .play-button {
@@ -156,7 +156,7 @@
 
         .sentence-display {
             font-size: 1.4em;
-            margin: 30px 0;
+            margin: 25px 0;
             text-align: center;
             line-height: 2.2;
             padding: 25px;
@@ -297,7 +297,7 @@
 
         .button-group {
             text-align: center;
-            margin-top: 25px;
+            margin-top: 20px;
         }
 
         .info-text {
@@ -378,28 +378,28 @@
         .stage-indicator {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px 30px;
-            border-radius: 15px;
-            font-size: 1.4em;
+            padding: 10px 25px;
+            border-radius: 12px;
+            font-size: 1.1em;
             font-weight: 700;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             text-align: center;
             display: inline-block;
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.25);
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            letter-spacing: 1px;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            letter-spacing: 0.5px;
             text-transform: uppercase;
         }
 
         .stage-indicator.review {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.25);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.2);
         }
 
         .stage-indicator.survey {
             background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);
             color: #333;
-            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.25);
+            box-shadow: 0 6px 20px rgba(255, 193, 7, 0.2);
         }
 
         /* 移除：播放统计显示样式 */
@@ -422,7 +422,7 @@
         <!-- Welcome Stage: Experiment Introduction -->
         <div class="stage active" id="welcomeStage">
             <div class="question-card">
-                <h2 style="text-align: center; color: #667eea; margin-bottom: 30px;">Welcome to Audio Listening Experiment</h2>
+                <h2 style="text-align: center; color: #667eea; margin-bottom: 30px;">🎧 Welcome to Audio Listening Experiment</h2>
                 
                 <div style="background: #e3f2fd; padding: 25px; border-radius: 15px; margin-bottom: 25px;">
                     <h3 style="color: #1976d2; margin-bottom: 20px;">📋 Experiment Instructions:</h3>
@@ -1877,7 +1877,7 @@
 
         // ============ 初始化 ============
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🎧 Audio Listening Experiment v8.6 - Enhanced UI Design');
+            console.log('🎧 Audio Listening Experiment v8.7 - Optimized Layout Spacing');
             
             // 初始化Firebase
             const firebaseReady = await initializeFirebase();
