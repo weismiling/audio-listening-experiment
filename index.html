@@ -378,22 +378,25 @@
         .stage-indicator {
             background: #667eea;
             color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            font-weight: 600;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 1.3em;
+            font-weight: 700;
             margin-bottom: 20px;
             text-align: center;
             display: inline-block;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
         .stage-indicator.review {
             background: #28a745;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
         }
 
         .stage-indicator.survey {
             background: #ffc107;
             color: #333;
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
         }
 
         /* 移除：播放统计显示样式 */
@@ -466,7 +469,7 @@
 
         <!-- Stage 1: First Test (Questions 1-50) -->
         <div class="stage" id="stage1">
-            <div class="stage-indicator">Phase 1</div>
+            <div class="stage-indicator">🎧 Phase 1</div>
            <div class="progress-container">
             <div class="progress-info">
                 <span id="progressText"></span>
@@ -502,7 +505,7 @@
 
         <!-- Stage 2: Answer Review (Mouse tracking) -->
         <div class="stage" id="stage2">
-            <div class="stage-indicator review">Review</div>
+            <div class="stage-indicator review">📝 Review</div>
             <div class="feedback-section">
                 <h2>📝 Answer Review </h2>
                 <p><strong>Spell Check:</strong> Click red wavy lines to see correct answers</p>
@@ -515,7 +518,7 @@
 
         <!-- Stage 3: Second Test (Questions 51-100) -->
         <div class="stage" id="stage3">
-            <div class="stage-indicator">Phase 2</div>
+            <div class="stage-indicator">🎧 Phase 2</div>
             <!-- 修复问题1：为阶段3添加进度条 -->
             <div class="progress-container">
                 <div class="progress-info">
@@ -552,9 +555,8 @@
 
         <!-- Stage 4: Survey -->
         <div class="stage" id="stage4">
-            <div class="stage-indicator survey">Post-Experiment Survey</div>
+            <div class="stage-indicator survey">📊 Post-Experiment Survey</div>
             <div class="survey-section">
-                <h2>📋 Post-Experiment Survey</h2>
                 <p class="info-text">Thank you for completing the experiment! Please share your feedback.</p>
                 
                 <!-- 修复问题2：调查问卷必答错误提示 -->
@@ -1872,7 +1874,7 @@
 
         // ============ 初始化 ============
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🎧 Audio Listening Experiment v8.4 - Added Stage Indicators');
+            console.log('🎧 Audio Listening Experiment v8.5 - Enhanced Stage Indicators');
             
             // 初始化Firebase
             const firebaseReady = await initializeFirebase();
